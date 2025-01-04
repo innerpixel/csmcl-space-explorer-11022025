@@ -3,6 +3,28 @@
     <!-- Profile Header -->
     <ProfileHeader />
 
+    <!-- Level and XP Banner -->
+    <div class="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-xl p-6 backdrop-blur-sm border border-blue-500/20">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-white">{{ currentLevel }}</h2>
+          <p class="text-gray-400">Explorer Level</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xl font-semibold text-yellow-400">{{ totalXP }} XP</p>
+          <p v-if="nextLevel" class="text-sm text-gray-400">
+            {{ nextLevel.xpRequired - totalXP }} XP to {{ nextLevel.level }}
+          </p>
+        </div>
+      </div>
+      <div class="mt-4">
+        <div class="w-full bg-gray-700/30 rounded-full h-2">
+          <div class="bg-blue-500 h-2 rounded-full transition-all duration-500"
+               :style="{ width: `${levelProgress}%` }"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Stats Grid -->
     <div>
       <div class="flex items-center justify-between mb-6">
@@ -38,7 +60,15 @@
       </div>
     </div>
 
-    <!-- Onboarding Progress -->
+    <!-- Achievements Section -->
+    <div class="mt-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold text-white">Achievements & Progress</h2>
+      </div>
+      <AchievementsPanel />
+    </div>
+
+    <!-- Explorer Features Progress -->
     <div class="mt-8">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-semibold text-white">Explorer Mode Features</h2>
@@ -55,68 +85,30 @@ import { computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import ProfileHeader from './ProfileHeader.vue'
 import OnboardingProgress from './OnboardingProgress.vue'
+import AchievementsPanel from './AchievementsPanel.vue'
+import { useAchievements } from '../../composables/useAchievements'
 
 const userStore = useUserStore()
+const { totalXP, currentLevel, levelProgress, nextLevel } = useAchievements()
 
 const userStats = computed(() => [
   {
-    label: 'Space Activity',
+    label: 'Activity',
+    icon: '📊',
     value: userStore.spaceActivity,
-    icon: '🌟',
-    description: 'Interactions and chatter traffic in your space'
+    description: 'Your space activity metrics'
   },
   {
     label: 'Network',
+    icon: '🌐',
     value: userStore.networkStats,
-    icon: '🔗',
-    description: 'Active connections and pending requests'
+    description: 'Your network connections'
   },
   {
     label: 'Transactions',
+    icon: '💫',
     value: userStore.transactionStats,
-    icon: '⚡',
-    description: 'Total sent and received transactions'
-  },
-  {
-    label: 'Social Reach',
-    value: userStore.socialStats,
-    icon: '🌍',
-    description: 'Content shares and engagement rate'
-  },
-  {
-    label: 'Requests',
-    value: userStore.requestStats,
-    icon: '📬',
-    description: 'Pending space access requests'
-  },
-  {
-    label: 'Traffic',
-    value: userStore.trafficStats,
-    icon: '📊',
-    description: 'Real-time space traffic metrics'
+    description: 'Your transaction history'
   }
 ])
-
-const explorerTimeLeft = computed(() => {
-  if (!userStore.explorerExpiry) return null
-  
-  const expiryDate = new Date(userStore.explorerExpiry)
-  if (isNaN(expiryDate.getTime())) return null
-  
-  const timeLeft = Math.max(0, expiryDate.getTime() - Date.now())
-  const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60))
-  
-  if (days > 0) {
-    return `${days}d ${hours}h`
-  }
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`
-  }
-  if (minutes > 0) {
-    return `${minutes}m`
-  }
-  return 'Expired'
-})
 </script>

@@ -39,7 +39,7 @@ const resetDocs = async () => {
   <div class="documentation-container min-h-screen bg-gray-900/30">
     <div class="max-w-7xl mx-auto px-4 py-8 pt-24">
       <!-- Explorer Documentation -->
-      <div v-if="isExplorer" class="flex flex-col gap-8">
+      <div v-if="isExplorer || $route.meta.showExplorerDocs" class="flex flex-col gap-8">
         <div class="bg-blue-500/20 text-blue-300 px-4 py-3 rounded-lg">
           <div class="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

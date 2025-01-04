@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { userDb } from '../services/userDb'
+import { metricService } from '../services/achievements'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -11,48 +12,58 @@ export const useUserStore = defineStore('user', {
     displayName: null,
     cosmicalEmail: null,
     explorerExpiry: null,
-    achievements: [],
-    unlockedFeatures: [],
+    metrics: [],
+    achievements: [], // Initialize empty achievements array
+    xp: 0,
+    level: 'novice',
     gameState: {
       currentLevel: 'novice',
       xp: 0,
       badges: []
     },
     verificationDetails: {
-      email: null,
-      phone: null,
-      simNumber: null,
       status: 'pending',
-      completedSteps: []
+      steps: {
+        email: false,
+        identity: false,
+        security: false
+      }
     },
     space: {
-      theme: null,
-      visibility: 'private'
+      theme: 'default',
+      visibility: 'private',
+      features: []
     },
     wallet: {
-      connected: false,
-      address: null
+      balance: 0,
+      transactions: []
     },
     spaceMetrics: {
-      activity: { interactions: 0, chatter: 0 },
-      network: { connections: 0, pending: 0 },
-      transactions: { sent: 0, received: 0 },
-      social: { shares: 0, engagement: 0 },
-      requests: { sent: 0, received: 0 },
-      traffic: { inbound: 0, outbound: 0 }
+      traffic: {
+        inbound: 0,
+        outbound: 0
+      },
+      connections: {
+        active: 0,
+        total: 0
+      },
+      requests: {
+        pending: 0,
+        completed: 0
+      }
     },
     stepProgress: {
+      verification: {
+        progress: 0,
+        completed: false
+      },
       space: {
-        completed: false,
-        progress: 0
+        progress: 0,
+        completed: false
       },
       network: {
-        completed: false,
-        progress: 0
-      },
-      wallet: {
-        completed: false,
-        progress: 0
+        progress: 0,
+        completed: false
       }
     }
   }),
@@ -64,82 +75,35 @@ export const useUserStore = defineStore('user', {
     },
 
     verificationProgress: (state) => {
-      const steps = ['identity', 'contact', 'review']
+      const steps = ['email', 'identity', 'security']
       return {
-        completed: state.verificationDetails.completedSteps.length,
+        completed: Object.values(state.verificationDetails.steps).filter(Boolean).length,
         total: steps.length,
-        percent: (state.verificationDetails.completedSteps.length / steps.length) * 100
+        percent: (Object.values(state.verificationDetails.steps).filter(Boolean).length / steps.length) * 100
       }
     },
 
-    // Space Progress
-    spaceProgress: (state) => {
-      if (state.stepProgress.space.completed) return 100
-      if (!state.stepProgress.space.completed) return state.stepProgress.space.progress
+    currentLevel: (state) => state.level,
 
-      let progress = 0
-      if (state.space.theme) progress += 20
-      if (state.space.visibility) progress += 20
-      if (state.space.accessibility) progress += 20
-      if (state.space.boundaries) progress += 20
-      if (state.space.template) progress += 20
-      return progress
+    totalXP: (state) => state.xp,
+
+    currentLevelDetails() {
+      return metricService.getLevelDetails(this.level)
+    },
+    
+    nextLevel() {
+      const levels = Object.keys(metricService.levels)
+      const currentIndex = levels.indexOf(this.level)
+      return currentIndex < levels.length - 1 ? levels[currentIndex + 1] : null
     },
 
-    // Wallet Progress
-    walletProgress: (state) => {
-      if (state.stepProgress.wallet.completed) return 100
-      if (!state.stepProgress.wallet.completed) return state.stepProgress.wallet.progress
-
-      let progress = 0
-      if (state.wallet.address) progress += 50
-      if (state.wallet.connected) progress += 50
-      return progress
-    },
-
-    // Space Activity Stats
-    spaceActivity: (state) => ({
-      interactions: state.spaceMetrics.activity.interactions,
-      chatter: state.spaceMetrics.activity.chatter
-    }),
-
-    // Network Stats
-    networkStats: (state) => ({
-      connections: state.spaceMetrics.network.connections,
-      pending: state.spaceMetrics.network.pending
-    }),
-
-    // Transaction Stats
-    transactionStats: (state) => ({
-      sent: state.spaceMetrics.transactions.sent,
-      received: state.spaceMetrics.transactions.received
-    }),
-
-    // Social Stats
-    socialStats: (state) => ({
-      shares: state.spaceMetrics.social.shares,
-      engagement: state.spaceMetrics.social.engagement
-    }),
-
-    // Request Stats
-    requestStats: (state) => ({
-      sent: state.spaceMetrics.requests.sent,
-      received: state.spaceMetrics.requests.received
-    }),
-
-    // Traffic Stats
-    trafficStats: (state) => ({
-      inbound: state.spaceMetrics.traffic.inbound,
-      outbound: state.spaceMetrics.traffic.outbound
-    }),
-
-    currentLevel: (state) => state.gameState.currentLevel,
-
-    totalXP: (state) => state.gameState.xp,
-
-    earnedBadges: (state) => state.gameState.badges,
-
-    completedAchievements: (state) => state.achievements.length,
+    nextLevelProgress() {
+      if (!this.nextLevel) return 100
+      const currentLevel = metricService.levels[this.level]
+      const nextLevel = metricService.levels[this.nextLevel]
+      const progress = ((this.xp - currentLevel.minXP) / (nextLevel.minXP - currentLevel.minXP)) * 100
+      return Math.min(Math.max(progress, 0), 100)
+    }
   },
 
   actions: {
@@ -153,25 +117,24 @@ export const useUserStore = defineStore('user', {
 
     async login({ cosmicalName }) {
       try {
-        const user = userDb.findUser(cosmicalName)
+        const user = await userDb.getUser(cosmicalName)
         if (!user) {
-          console.error('User not found:', cosmicalName)
           return false
         }
 
-        // Set user state
+        // Set user data
         this.user = user
         this.isLoggedIn = true
+        this.displayName = user.displayName || cosmicalName
+        this.cosmicalEmail = user.email
         this.isAdmin = user.role === 'admin'
         this.isExplorer = user.role === 'explorer'
-        this.isVerified = user.isVerified
-        this.displayName = user.displayName
-        this.cosmicalEmail = user.email
+        this.isVerified = user.verified || false
         
-        if (user.role === 'explorer') {
-          const expiryTime = new Date()
-          expiryTime.setDate(expiryTime.getDate() + 10) // 10 days from now
-          this.explorerExpiry = expiryTime.toISOString()
+        // Set explorer expiry if applicable
+        if (this.isExplorer) {
+          const now = new Date()
+          this.explorerExpiry = new Date(now.getTime() + (10 * 24 * 60 * 60 * 1000)).toISOString()
           userDb.updateUser(cosmicalName, { explorerExpiry: this.explorerExpiry })
         }
 
@@ -208,9 +171,15 @@ export const useUserStore = defineStore('user', {
       try {
         const success = await this.login({ cosmicalName })
         if (success) {
+          // Set explorer specific state
+          this.isExplorer = true
+          this.explorerExpiry = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString() // 10 days
+          
           // Update last login for explorer
           userDb.updateUser(cosmicalName, { 
-            lastLogin: new Date().toISOString() 
+            lastLogin: new Date().toISOString(),
+            isExplorer: true,
+            explorerExpiry: this.explorerExpiry
           })
         }
         return success
@@ -225,57 +194,60 @@ export const useUserStore = defineStore('user', {
       return true
     },
 
-    updateProfile(updates) {
+    async updateProfile(updates) {
       try {
-        if (!this.user?.cosmicalName) {
-          throw new Error('No user logged in')
+        const success = await userDb.updateUser(this.user?.cosmicalName, updates)
+        if (!success) throw new Error('Profile update failed')
+
+        this.$patch(updates)
+
+        // Trigger profile customization achievement
+        if (!this.metrics.some(m => m.id === 'customize-profile')) {
+          await this.trackMetric('customize-profile', 'profile', {
+            userId: this.user.cosmicalName
+          })
         }
 
-        const success = userDb.updateUser(this.user.cosmicalName, updates)
-        if (success) {
-          Object.assign(this.user, updates)
-          return true
-        }
-        return false
+        return true
       } catch (error) {
         console.error('Profile update error:', error)
         return false
       }
     },
 
-    async addAchievement(achievement) {
-      if (this.achievements.some(a => a.id === achievement.id)) return
-      
-      this.achievements.push(achievement)
-      this.gameState.xp += achievement.xp
-      
-      // Update badges if achievement includes one
-      if (achievement.reward && achievement.reward.includes('badge')) {
-        this.gameState.badges.push(achievement.reward)
-      }
-      
-      await userDb.updateUser(this.user?.cosmicalName, {
-        achievements: this.achievements,
-        gameState: this.gameState
+    async trackMetric(metricId, category, data = {}) {
+      // Track metric and get XP
+      const earnedXP = metricService.trackMetric(metricId, category, {
+        ...data,
+        userId: this.user?.cosmicalName
       })
-    },
-    
-    async updateGameState(updates) {
-      this.gameState = {
-        ...this.gameState,
-        ...updates
+
+      if (earnedXP > 0) {
+        await this.addXP(earnedXP)
       }
-      
-      await userDb.updateUser(this.user?.cosmicalName, {
-        gameState: this.gameState
-      })
     },
-    
+
+    async addXP(amount) {
+      const oldLevel = this.level
+      this.xp += amount
+      
+      // Recalculate level
+      const newLevel = metricService.calculateLevel(this.xp)
+      if (newLevel !== oldLevel) {
+        this.level = newLevel
+        // Update in database
+        await userDb.updateUser(this.user.cosmicalName, {
+          xp: this.xp,
+          level: this.level
+        })
+      }
+    },
+
     async unlockFeature(feature) {
-      if (!this.unlockedFeatures.includes(feature)) {
-        this.unlockedFeatures.push(feature)
+      if (!this.space.features.includes(feature)) {
+        this.space.features.push(feature)
         await userDb.updateUser(this.user?.cosmicalName, {
-          unlockedFeatures: this.unlockedFeatures
+          space: this.space
         })
       }
     }
@@ -285,12 +257,11 @@ export const useUserStore = defineStore('user', {
     enabled: true,
     strategies: [
       {
-        key: 'user-store',
         storage: localStorage,
         paths: ['user', 'isLoggedIn', 'isAdmin', 'isExplorer', 'isVerified', 
                 'displayName', 'cosmicalEmail', 'explorerExpiry', 
                 'verificationDetails', 'space', 'wallet', 'spaceMetrics', 'stepProgress',
-                'achievements', 'unlockedFeatures', 'gameState']
+                'metrics', 'xp', 'level']
       }
     ]
   }

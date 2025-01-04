@@ -4,36 +4,20 @@ import { setupRouteGuards } from './guards'
 import Home from '../views/Home.vue'
 
 const routes = [
+  // Public routes
   {
     path: '/',
     name: 'home',
     component: Home,
     beforeEnter: (to, from, next) => {
       const store = useUserStore()
-      if (store.isExplorer) {
+      // If user is an explorer, always redirect to explorer page
+      if (store.isLoggedIn && store.isExplorer) {
         next({ name: 'explorer' })
-      } else {
-        next()
+        return
       }
+      next()
     }
-  },
-  {
-    path: '/explorer',
-    name: 'explorer',
-    component: () => import('../views/ExplorerLanding.vue'),
-    meta: { requiresExplorer: true }
-  },
-  {
-    path: '/admin',
-    name: 'admin',
-    component: () => import('../views/AdminDashboard.vue'),
-    meta: { requiresAdmin: true }
-  },
-  {
-    path: '/dashboard',
-    name: 'dashboard',
-    component: () => import('../views/UserDashboard.vue'),
-    meta: { requiresAuth: true }
   },
   {
     path: '/login',
@@ -49,15 +33,17 @@ const routes = [
     }
   },
   {
-    path: '/profile',
-    name: 'profile',
-    component: () => import('../views/Profile.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/documentation',
     name: 'documentation',
-    component: () => import('../views/Documentation.vue')
+    component: () => import('../views/Documentation.vue'),
+    beforeEnter: (to, from, next) => {
+      const store = useUserStore()
+      // If coming from explorer page, ensure explorer docs are shown
+      if (from.name === 'explorer' || store.isExplorer) {
+        to.meta.showExplorerDocs = true
+      }
+      next()
+    }
   },
   {
     path: '/onboarding',
@@ -77,6 +63,60 @@ const routes = [
       }
     ]
   },
+
+  // Protected routes
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('../views/UserDashboard.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('../views/Profile.vue'),
+    meta: { requiresAuth: true },
+    beforeEnter: (to, from, next) => {
+      const store = useUserStore()
+      // Check if user is logged in and not expired
+      if (store.isExplorer && store.isExplorerExpired) {
+        next({ name: 'login' })
+        return
+      }
+      next()
+    }
+  },
+  {
+    path: '/network',
+    name: 'network',
+    component: () => import('../views/Network.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/explorer',
+    name: 'explorer',
+    component: () => import('../views/ExplorerLanding.vue'),
+    meta: { requiresAuth: true },
+    beforeEnter: (to, from, next) => {
+      const store = useUserStore()
+      if (!store.isExplorer) {
+        next({ name: 'home' })
+        return
+      }
+      if (store.isExplorerExpired) {
+        next({ name: 'login' })
+        return
+      }
+      next()
+    }
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('../views/AdminDashboard.vue'),
+    meta: { requiresAdmin: true }
+  },
+
   // Catch all route for 404
   {
     path: '/:pathMatch(.*)*',
@@ -102,28 +142,25 @@ router.beforeEach((to, from, next) => {
     next({ name: 'verification' })
     return
   }
-
-  // Check for explorer-only routes
-  if (to.meta.requiresExplorer && !store.isExplorer) {
-    next({ name: 'home' })
-    return
-  }
-
-  // Check for admin-only routes
+  
+  // Check for admin requirement
   if (to.meta.requiresAdmin && !store.isAdmin) {
     next({ name: 'home' })
     return
   }
-
-  // Check for auth required routes
-  if (to.meta.requiresAuth && !store.isLoggedIn) {
-    next({
-      name: 'login',
-      query: { redirect: to.fullPath }
-    })
+  
+  // Check for explorer requirement
+  if (to.meta.requiresExplorer && !store.isExplorer) {
+    next({ name: 'home' })
     return
   }
-
+  
+  // Check for auth requirement
+  if (to.meta.requiresAuth && !store.isLoggedIn) {
+    next({ name: 'login', query: { redirect: to.fullPath } })
+    return
+  }
+  
   next()
 })
 

@@ -54,67 +54,40 @@ class UserDb {
     }
   }
 
-  findUser(cosmicalName) {
-    const db = this.readDb()
-    return db.users.find(user => 
-      user.cosmicalName.toLowerCase() === cosmicalName.toLowerCase()
-    )
+  getUser(cosmicalName) {
+    const { users } = this.readDb()
+    return users.find(u => u.cosmicalName.toLowerCase() === cosmicalName.toLowerCase())
   }
 
   createUser(userData) {
-    const db = this.readDb()
-    
-    // Check if user already exists
-    if (this.findUser(userData.cosmicalName)) {
-      throw new Error('User already exists')
+    const { users } = this.readDb()
+    if (users.some(u => u.cosmicalName.toLowerCase() === userData.cosmicalName.toLowerCase())) {
+      return false
     }
-
-    // Add timestamps
-    userData.createdAt = new Date().toISOString()
-    userData.updatedAt = new Date().toISOString()
-
-    // Add to database
-    db.users.push(userData)
-    return this.writeDb(db)
+    users.push({
+      ...userData,
+      createdAt: new Date().toISOString()
+    })
+    return this.writeDb({ users })
   }
 
   updateUser(cosmicalName, updates) {
-    const db = this.readDb()
-    const userIndex = db.users.findIndex(user => 
-      user.cosmicalName.toLowerCase() === cosmicalName.toLowerCase()
-    )
+    const { users } = this.readDb()
+    const userIndex = users.findIndex(u => u.cosmicalName.toLowerCase() === cosmicalName.toLowerCase())
+    if (userIndex === -1) return false
 
-    if (userIndex === -1) {
-      throw new Error('User not found')
-    }
-
-    // Update user data
-    db.users[userIndex] = {
-      ...db.users[userIndex],
+    users[userIndex] = {
+      ...users[userIndex],
       ...updates,
       updatedAt: new Date().toISOString()
     }
-
-    return this.writeDb(db)
+    return this.writeDb({ users })
   }
 
   deleteUser(cosmicalName) {
-    const db = this.readDb()
-    const userIndex = db.users.findIndex(user => 
-      user.cosmicalName.toLowerCase() === cosmicalName.toLowerCase()
-    )
-
-    if (userIndex === -1) {
-      throw new Error('User not found')
-    }
-
-    db.users.splice(userIndex, 1)
-    return this.writeDb(db)
-  }
-
-  listUsers() {
-    const db = this.readDb()
-    return db.users
+    const { users } = this.readDb()
+    const filteredUsers = users.filter(u => u.cosmicalName.toLowerCase() !== cosmicalName.toLowerCase())
+    return this.writeDb({ users: filteredUsers })
   }
 }
 

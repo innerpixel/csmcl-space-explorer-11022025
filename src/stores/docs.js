@@ -7,13 +7,15 @@ export const useDocsStore = defineStore('docs', {
     currentSection: 'overview',
     sections: [
       { id: 'overview', title: 'Overview' },
+      { id: 'project-docs', title: 'Project Docs' },
       { id: 'features', title: 'Features' },
       { id: 'security', title: 'Security' },
       { id: 'data-structures', title: 'Data Structures' },
       { id: 'architecture', title: 'Architecture' },
       { id: 'deployment', title: 'Deployment' },
       { id: 'development', title: 'Development' },
-      { id: 'api', title: 'API Reference' }
+      { id: 'api', title: 'API Reference' },
+      { id: 'readme', title: 'README' }
     ],
     isEditing: false
   }),

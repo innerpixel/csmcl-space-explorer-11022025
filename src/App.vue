@@ -2,17 +2,22 @@
 import { RouterView } from 'vue-router'
 import { useUserStore } from './stores/user'
 import Navbar from './components/Navbar.vue'
+import AchievementNotification from './components/achievements/AchievementNotification.vue'
+import { useAchievements } from './composables/useAchievements'
+import NotificationToast from './components/NotificationToast.vue'
 
 const userStore = useUserStore()
+const { activeNotification, dismissNotification } = useAchievements()
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-900 text-white">
+    <NotificationToast />
     <!-- Navigation -->
     <Navbar />
 
     <!-- Main Content -->
-    <main class="flex-1 w-full">
+    <main class="container mx-auto px-4 py-8">
       <RouterView v-slot="{ Component }">
         <transition
           name="fade"
@@ -23,6 +28,11 @@ const userStore = useUserStore()
         </transition>
       </RouterView>
     </main>
+    <AchievementNotification
+      v-if="activeNotification"
+      :achievement="activeNotification"
+      @dismiss="dismissNotification"
+    />
   </div>
 </template>
 

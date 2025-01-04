@@ -13,6 +13,29 @@ CSMCL.Explorer is a temporary account that gives you 10-day access to experience
 - You'll receive notifications as the expiration approaches
 - Option to convert to full account at any time
 
+## Explorer Permissions
+
+### What You Can Do
+- Access explorer-specific features and tools
+- View all public content and documentation
+- Access metrics and analytics dashboards
+- Participate in explorer-specific activities
+- Test and explore platform features
+
+### Limitations
+- Cannot edit or modify content
+- No user management capabilities
+- Time-limited access (10 days)
+- Some advanced features restricted
+- Cannot access administrative functions
+
+### Converting to Full Account
+To gain additional permissions and permanent access:
+1. Click the "Convert Account" button
+2. Complete the full registration process
+3. Choose between User or Admin role (if eligible)
+4. Retain your explorer history and progress
+
 ## Features Available
 
 ### 1. Pre-configured Space
@@ -103,9 +126,16 @@ When converting:
 ## Need Help?
 
 ### Support Resources
-- Documentation: docs.csmcl.space/explorer
-- Community: community.csmcl.space
-- Email: support@csmcl.space
+- Documentation: Select "Project Docs" in the navigation menu
+- Community: Join our [Discord](https://discord.gg/csmclspace)
+- Support: [support@csmcl.space](mailto:support@csmcl.space)
+- GitHub: [Report Issues](https://github.com/csmclspace/onboarding/issues)
+
+### Quick Links
+- [Convert to Full Account](#/convert) 
+- [Explorer Dashboard](#/dashboard)
+- [Achievement Progress](#/achievements)
+- [Space Settings](#/settings)
 
 ### Common Questions
 1. **Can I extend my explorer session?**

@@ -2,9 +2,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useAchievements } from '../../composables/useAchievements'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { unlockAchievement } = useAchievements()
 
 const form = ref({
   spaceSize: '10',
@@ -75,7 +77,10 @@ const handleSubmit = async () => {
       type: form.value.spaceType,
       customDomain: form.value.customDomain || undefined
     })
-    
+
+    // Trigger space setup achievement
+    await unlockAchievement('space-architect')
+
     router.push('/dashboard')
   } catch (error) {
     console.error('Space setup failed:', error)

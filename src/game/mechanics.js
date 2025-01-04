@@ -6,6 +6,93 @@ export const LEVELS = {
   COMMANDER: 'commander'
 }
 
+export const achievements = {
+  // Identity Achievements
+  'first-login': {
+    id: 'first-login',
+    name: 'First Steps',
+    description: 'Begin your journey in the Cosmical Space',
+    xp: 50,
+    category: 'identity',
+    icon: '🌟'
+  },
+  'customize-profile': {
+    id: 'customize-profile',
+    name: 'Personal Touch',
+    description: 'Customize your profile to make it uniquely yours',
+    xp: 200,
+    category: 'identity',
+    icon: '✨'
+  },
+
+  // Space Achievements
+  'space-architect': {
+    id: 'space-architect',
+    name: 'Space Architect',
+    description: 'Configure your first space environment',
+    xp: 300,
+    category: 'space',
+    icon: '🏗️'
+  },
+  'theme-master': {
+    id: 'theme-master',
+    name: 'Theme Master',
+    description: 'Personalize your space with a custom theme',
+    xp: 150,
+    category: 'space',
+    icon: '🎨'
+  },
+
+  // Network Achievements
+  'network-pioneer': {
+    id: 'network-pioneer',
+    name: 'Network Pioneer',
+    description: 'Set up your network preferences',
+    xp: 250,
+    category: 'network',
+    icon: '🌐'
+  },
+  'network-ambassador': {
+    id: 'network-ambassador',
+    name: 'Network Ambassador',
+    description: 'Make your space publicly accessible',
+    xp: 200,
+    category: 'network',
+    icon: '🤝'
+  },
+  'space-explorer': {
+    id: 'space-explorer',
+    name: 'Space Explorer',
+    description: 'Enable space discovery to connect with others',
+    xp: 150,
+    category: 'network',
+    icon: '🔭'
+  }
+}
+
+export const levels = {
+  novice: {
+    level: 'Novice',
+    xpRequired: 0,
+    features: ['basic-profile', 'space-setup']
+  },
+  explorer: {
+    level: 'Explorer',
+    xpRequired: 500,
+    features: ['network-setup', 'theme-customization']
+  },
+  pioneer: {
+    level: 'Pioneer',
+    xpRequired: 1000,
+    features: ['advanced-networking', 'space-analytics']
+  },
+  commander: {
+    level: 'Commander',
+    xpRequired: 2000,
+    features: ['custom-domain', 'api-access']
+  }
+}
+
 export const levelConfig = {
   [LEVELS.NOVICE]: {
     title: "Space Cadet",
@@ -49,97 +136,47 @@ export const levelConfig = {
   }
 }
 
-export const achievements = {
-  identity: {
-    category: "Identity",
-    tasks: [
-      {
-        id: "create-profile",
-        name: "Identity Creation",
-        description: "Create your unique space identity",
-        xp: 100,
-        reward: "profile-badge"
-      },
-      {
-        id: "verify-email",
-        name: "Verified Explorer",
-        description: "Verify your email address",
-        xp: 150,
-        reward: "verification-badge"
-      },
-      {
-        id: "customize-profile",
-        name: "Personal Touch",
-        description: "Customize your profile appearance",
-        xp: 200,
-        reward: "customization-tools"
-      }
-    ]
-  },
-  exploration: {
-    category: "Exploration",
-    tasks: [
-      {
-        id: "visit-dashboard",
-        name: "First Steps",
-        description: "Visit your space dashboard",
-        xp: 50,
-        reward: "explorer-tools"
-      },
-      {
-        id: "complete-tutorial",
-        name: "Tutorial Master",
-        description: "Complete the basic space tutorial",
-        xp: 200,
-        reward: "tutorial-badge"
-      },
-      {
-        id: "explore-features",
-        name: "Feature Explorer",
-        description: "Discover all basic space features",
-        xp: 300,
-        reward: "feature-badge"
-      }
-    ]
-  },
-  mastery: {
-    category: "Mastery",
-    tasks: [
-      {
-        id: "setup-wallet",
-        name: "Wallet Master",
-        description: "Set up and secure your space wallet",
-        xp: 400,
-        reward: "wallet-badge"
-      },
-      {
-        id: "network-pioneer",
-        name: "Network Pioneer",
-        description: "Establish your first network connection",
-        xp: 500,
-        reward: "network-badge"
-      },
-      {
-        id: "space-architect",
-        name: "Space Architect",
-        description: "Customize your space configuration",
-        xp: 600,
-        reward: "architect-badge"
-      }
-    ]
-  }
-}
-
 export const calculateLevel = (xp) => {
-  return Object.entries(levelConfig)
-    .find(([_, level]) => xp >= level.minXP && xp <= level.maxXP)?.[0] || LEVELS.NOVICE
+  const levelEntries = Object.entries(levels)
+  for (let i = levelEntries.length - 1; i >= 0; i--) {
+    if (xp >= levelEntries[i][1].xpRequired) {
+      return levelEntries[i][1]
+    }
+  }
+  return levels.novice
 }
 
-export const calculateProgress = (xp, level) => {
-  const config = levelConfig[level]
-  const totalXPInLevel = config.maxXP - config.minXP
-  const xpInLevel = xp - config.minXP
-  return Math.min(100, Math.floor((xpInLevel / totalXPInLevel) * 100))
+export const calculateProgress = (xp) => {
+  const currentLevel = calculateLevel(xp)
+  const levelEntries = Object.entries(levels)
+  const currentLevelIndex = levelEntries.findIndex(([_, level]) => level.level === currentLevel.level)
+  
+  if (currentLevelIndex === levelEntries.length - 1) {
+    return 100 // Max level reached
+  }
+
+  const nextLevel = levelEntries[currentLevelIndex + 1][1]
+  const xpInCurrentLevel = xp - currentLevel.xpRequired
+  const xpRequiredForNextLevel = nextLevel.xpRequired - currentLevel.xpRequired
+  
+  return Math.min(100, Math.floor((xpInCurrentLevel / xpRequiredForNextLevel) * 100))
+}
+
+export const getNextLevel = (xp) => {
+  const currentLevel = calculateLevel(xp)
+  const levelEntries = Object.entries(levels)
+  const currentLevelIndex = levelEntries.findIndex(([_, level]) => level.level === currentLevel.level)
+  
+  if (currentLevelIndex === levelEntries.length - 1) {
+    return null // No next level
+  }
+
+  return levelEntries[currentLevelIndex + 1][1]
+}
+
+export const checkFeatureUnlock = (feature, xp) => {
+  const currentLevel = calculateLevel(xp)
+  return currentLevel.features.includes(feature)
 }
 
 export const getUnlockedFeatures = (level) => {

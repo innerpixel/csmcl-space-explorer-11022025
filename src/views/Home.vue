@@ -71,22 +71,22 @@ setInterval(rotateQuote, 10000)
           
           <!-- CTA Buttons -->
           <div class="flex flex-col sm:flex-row justify-center gap-4">
-            <a
-              href="/onboarding/identity"
+            <router-link
+              to="/onboarding/verification"
               class="px-8 py-4 bg-blue-500 text-white rounded-xl font-medium
                      hover:bg-blue-600 transform hover:scale-105 transition-all duration-300
                      shadow-lg shadow-blue-500/25"
             >
               Get Started
-            </a>
-            <a
-              href="/documentation"
+            </router-link>
+            <router-link
+              to="/documentation"
               class="px-8 py-4 bg-gray-800/50 text-white rounded-xl font-medium
                      hover:bg-gray-700/50 transform hover:scale-105 transition-all duration-300
                      border border-gray-700/50"
             >
               Learn More
-            </a>
+            </router-link>
           </div>
         </div>
       </div>

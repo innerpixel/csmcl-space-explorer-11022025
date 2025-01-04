@@ -3,12 +3,40 @@ export const documentation = {
 
 A modern Vue.js application for CSMCL.Space user onboarding and identity management. This application provides a seamless experience for users to create and manage their CSMCL identity, verify their account, set up their space, and connect their wallet.
 
+> 💡 **For Developers & Contributors**: Select "README" from the navigation menu to find development setup, contribution guidelines, and project roadmap.
+
 ## Key Features
 - Secure user authentication with rate limiting
 - CSMCL.Explorer mode for temporary access
 - Multi-step onboarding process
 - Real-time space analytics
 - Wallet integration
+
+## Roles and Permissions
+
+### Admin Role
+Administrators have full system access with the following permissions:
+- Content editing and management
+- User management capabilities
+- Access to all metrics and analytics
+- Full explorer features access
+- Complete view access to all content
+
+### User Role
+Standard users have basic access with these permissions:
+- View access to general content
+- Access to personal metrics
+- Basic platform features
+- Cannot manage users or content
+- No explorer features access
+
+### Explorer Role
+Temporary users with exploration privileges:
+- Access to explorer-specific features
+- View access to general content
+- Access to metrics and analytics
+- Time-limited account (10 days)
+- Cannot manage users or edit content
 
 ## Security Highlights
 - Multi-layer authentication with SHA3 hashing
@@ -267,6 +295,74 @@ const securityHeaders = {
    - System hardening
    - Configuration review`,
 
+  'project-docs': `# Project Documentation
+
+## README Overview
+The project README provides comprehensive information about setup, development, and contribution guidelines. You can access it in two ways:
+
+### 1. Via Navigation Menu
+- Click "README" in the documentation navigation
+- Contains full development and contribution details
+- Always up-to-date with latest changes
+
+### 2. Via Source Code
+- Located at: \`/README.md\` in project root
+- GitHub-compatible markdown format
+- Great for offline reference
+
+## Key Documentation Sections
+
+### Getting Started
+- Quick start guide
+- Installation steps
+- Basic configuration
+- Development setup
+
+### For Developers
+- Tech stack details
+- Project structure
+- Coding conventions
+- Local development
+
+### For Contributors
+- Contribution guidelines
+- Pull request process
+- Code review checklist
+- Community standards
+
+### For Beta Testers
+- Testing guidelines
+- Feedback submission
+- Bug reporting
+- Feature requests
+
+## Additional Resources
+- Project roadmap
+- Community links
+- Support channels
+- License information
+
+> 📘 **Note**: For the complete README content, select "README" from the navigation menu.`,
+
+  api: `# API Reference
+
+## Authentication
+- POST /api/auth/login
+- POST /api/auth/logout
+- POST /api/auth/refresh
+- GET /api/auth/status
+
+## User Management
+- GET /api/users
+- GET /api/users/:userId
+- POST /api/users/create
+- PUT /api/users/:userId
+
+## Space Management
+- GET /api/space/:spaceId
+- POST /api/space/create
+- PUT /api/space/update`,
+
   'data-structures': `# Data Structures
 
 ## User Store
@@ -478,21 +574,136 @@ For more information about implementing these data structures, see the Developme
 - Vue style guide
 - Git commit conventions`,
 
-  api: `## API Reference
+  readme: `# CSMCL.Space Onboarding
 
-### Authentication Endpoints
-- POST /api/auth/login
-- POST /api/auth/register
-- POST /api/auth/verify
-- POST /api/auth/challenge
+Welcome to CSMCL.Space - where innovation meets community! 
 
-### User Management
-- GET /api/user/profile
-- PUT /api/user/profile
-- POST /api/user/verify
+## Quick Start
 
-### Space Management
-- GET /api/space/:spaceId
-- POST /api/space/create
-- PUT /api/space/update`
+\`\`\`bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+\`\`\`
+
+## Content Overview 
+
+### Core Documentation
+- **General Overview**: Introduction to CSMCL.Space
+- **User Roles**: Admin, User, and Explorer permissions
+- **Security**: Authentication and data protection
+- **Features**: Detailed platform capabilities
+- **Architecture**: System design and components
+
+### Guides
+- **Getting Started**: First steps for new users
+- **Explorer Mode**: 10-day trial experience
+- **Space Setup**: Customizing your environment
+- **Achievement System**: Earning and tracking progress
+- **Best Practices**: Tips for optimal usage
+
+### API & Integration
+- **API Reference**: Available endpoints and methods
+- **Wallet Integration**: Connecting digital wallets
+- **Data Structures**: Core data models
+- **Event System**: Real-time updates and notifications
+
+## For Developers 
+
+### Tech Stack
+- Vue 3 with Composition API
+- Vite for blazing fast builds
+- Pinia for state management
+- TailwindCSS for styling
+
+### Project Structure
+\`\`\`
+src/
+├── components/    # Reusable Vue components
+├── stores/       # Pinia state management
+├── views/        # Page components
+├── services/     # API and business logic
+├── composables/  # Shared composition functions
+└── docs/         # Documentation content
+\`\`\`
+
+## For Beta Testers 
+
+### Getting Started
+1. Request Explorer access through our portal
+2. Use the 10-day trial to test features
+3. Submit feedback via GitHub Issues
+4. Join our Discord community
+
+### Key Areas to Test
+- User onboarding flow
+- Space customization
+- Achievement system
+- Documentation clarity
+- Mobile responsiveness
+
+## For Contributors 
+
+### Ways to Contribute
+1. **Code**: Submit PRs for bug fixes or features
+2. **Ideas**: Open issues for feature requests
+3. **Content**: Help improve documentation
+4. **Design**: Share UI/UX suggestions
+5. **Testing**: Report bugs and usability issues
+
+### Contribution Guidelines
+- Follow our coding style and conventions
+- Write meaningful commit messages
+- Add tests for new features
+- Update documentation as needed
+
+## Future Roadmap 
+
+### Planned Features
+- [ ] Enhanced social integration
+- [ ] Advanced space analytics
+- [ ] Custom achievement creation
+- [ ] Community marketplace
+- [ ] Mobile app companion
+
+### Community Suggestions
+We welcome ideas for:
+- New achievement types
+- Space customization options
+- Social features
+- Integration possibilities
+- Educational content
+
+## Get Involved 
+
+### Community
+- Join our [Discord](https://discord.gg/csmclspace)
+- Visit our [GitHub](https://github.com/csmclspace)
+- Read our [Blog](https://blog.csmcl.space)
+- Email: support@csmcl.space
+
+### Ways to Contribute
+1. **Code**: Submit PRs for bug fixes or features
+2. **Documentation**: Help improve our docs
+3. **Testing**: Report bugs and provide feedback
+4. **Design**: Suggest UI/UX improvements
+5. **Community**: Help other users and share knowledge
+
+### Contribution Guidelines
+- Fork the repository
+- Create feature branch
+- Follow code style guide
+- Add tests for new features
+- Update documentation
+- Submit PR with clear description
+
+## License
+MIT License - feel free to use and modify as needed!
+
+---`,
 }

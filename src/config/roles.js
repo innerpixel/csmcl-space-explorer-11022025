@@ -8,34 +8,25 @@ export const ROLES = {
 // Role-based permissions
 export const PERMISSIONS = {
   [ROLES.ADMIN]: {
+    canEdit: true,
+    canView: true,
     canManageUsers: true,
-    canManageSpaces: true,
-    canAccessAdmin: true,
-    canModifySystem: true,
     canViewMetrics: true,
-    canManageCompliance: true,
-    canOverrideSettings: true,
-    canAccessAuditLogs: true
+    canAccessExplorer: true
   },
   [ROLES.USER]: {
+    canEdit: false,
+    canView: true,
     canManageUsers: false,
-    canManageSpaces: false,
-    canAccessAdmin: false,
-    canModifySystem: false,
     canViewMetrics: true,
-    canManageCompliance: false,
-    canOverrideSettings: false,
-    canAccessAuditLogs: false
+    canAccessExplorer: false
   },
   [ROLES.EXPLORER]: {
+    canEdit: false,
+    canView: true,
     canManageUsers: false,
-    canManageSpaces: false,
-    canAccessAdmin: false,
-    canModifySystem: false,
     canViewMetrics: true,
-    canManageCompliance: false,
-    canOverrideSettings: false,
-    canAccessAuditLogs: false
+    canAccessExplorer: true
   }
 }
 

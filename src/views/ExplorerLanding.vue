@@ -22,10 +22,12 @@
 
       <!-- Quick Actions -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-        <div v-for="action in quickActions" :key="action.name"
-             class="p-6 rounded-xl bg-gray-800/50 border border-gray-700/50 backdrop-blur-sm
-                    hover:bg-gray-800/70 transition-all duration-300 cursor-pointer"
-             @click="handleAction(action)">
+        <div
+          v-for="action in quickActions" 
+          :key="action.name"
+          @click="handleQuickAction(action)"
+          class="p-6 rounded-xl bg-gray-800/50 border border-gray-700/50 backdrop-blur-sm
+                 hover:bg-gray-800/70 transition-all duration-300 cursor-pointer">
           <div class="text-3xl mb-4">{{ action.icon }}</div>
           <h3 class="text-lg font-semibold text-white mb-2">{{ action.name }}</h3>
           <p class="text-gray-400 text-sm">{{ action.description }}</p>
@@ -118,10 +120,12 @@ const explorerFeatures = computed(() => [
   }
 ])
 
-const handleAction = (action) => {
-  if (action.path) {
-    router.push(action.path)
-  }
+const handleQuickAction = (action) => {
+  router.push(action.path).catch((err) => {
+    if (err.name !== 'NavigationDuplicated') {
+      console.error('Navigation error:', err)
+    }
+  })
 }
 
 const handleExplorerLogin = async () => {

@@ -419,9 +419,10 @@ Real-time metrics tracking for:
   - Sent transactions
   - Received transactions
 
-- **Social Reach**
-  - Content shares
-  - Engagement rate
+- **Community Engagement**
+  - Content interactions
+  - Collaboration score
+  - Community contributions
 
 - **Requests**
   - Sent requests
@@ -592,6 +593,29 @@ CSMCL.Explorer is a temporary account type that allows users to experience CSMCL
   - Alternative action suggestions
   - Help documentation links
   - Support contact options
+
+## Get Involved
+
+### Community
+- Join our [Discord](https://discord.gg/csmclspace)
+- Visit our [GitHub](https://github.com/csmclspace)
+- Read our [Blog](https://blog.csmcl.space)
+- Email: support@csmcl.space
+
+### Ways to Contribute
+1. **Code**: Submit PRs for bug fixes or features
+2. **Documentation**: Help improve our docs
+3. **Testing**: Report bugs and provide feedback
+4. **Design**: Suggest UI/UX improvements
+5. **Community**: Help other users and share knowledge
+
+### Contribution Guidelines
+- Fork the repository
+- Create feature branch
+- Follow code style guide
+- Add tests for new features
+- Update documentation
+- Submit PR with clear description
 
 ## Project Structure
 

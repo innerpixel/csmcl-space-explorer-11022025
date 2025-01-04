@@ -104,8 +104,8 @@ const validateForm = () => {
     isValid = false
   } else {
     const words = form.value.displayName.trim().split(/\s+/)
-    if (words.length < 2) {
-      errors.value.displayName = 'Please enter at least 2 words'
+    if (words.length < 1 || words.length > 3) {
+      errors.value.displayName = 'Please enter between 1 and 3 words'
       isValid = false
     } else if (words.some(word => !validateWord(word))) {
       errors.value.displayName = 'Each word must be at least 3 letters and contain only letters'
@@ -177,18 +177,38 @@ const handleSubmit = async () => {
     router.push('/onboarding/verify')
   } catch (error) {
     console.error('Registration failed:', error)
+    
+    // Clear any previous errors
+    errors.value = {
+      displayName: '',
+      cosmicalEmail: '',
+      recoveryPhrase: '',
+      challengeResponse: '',
+      agreeToTerms: ''
+    }
+
+    // Handle specific error cases
     if (error.message.includes('name')) {
-      errors.value.displayName = error.message
+      errors.value.displayName = 'Invalid display name. Please use 1-3 words with at least 3 letters each.'
     } else if (error.message.includes('email')) {
-      errors.value.cosmicalEmail = error.message
+      errors.value.cosmicalEmail = 'This email is already taken or invalid. Please choose another.'
     } else if (error.message.includes('phrase')) {
-      errors.value.recoveryPhrase = error.message
+      errors.value.recoveryPhrase = 'Invalid recovery phrase. Please ensure each word has at least 3 letters.'
+    } else if (error.message.includes('network')) {
+      serverError.value = 'Network error. Please check your connection and try again.'
+    } else if (error.message.includes('timeout')) {
+      serverError.value = 'Request timed out. Please try again.'
     } else {
+      serverError.value = 'Registration failed. Please try again or contact support if the issue persists.'
       handleFailedAttempt()
+    }
+
+    // Generate new challenge if security-related error
+    if (error.message.includes('security') || error.message.includes('invalid')) {
+      challenge.value = generateChallenge()
     }
   } finally {
     isLoading.value = false
-    challenge.value = generateChallenge()
   }
 }
 
@@ -208,9 +228,19 @@ defineExpose({
   <form @submit.prevent="handleSubmit" class="space-y-6 max-w-2xl mx-auto w-full">
     <div 
       v-if="serverError"
-      class="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"
+      class="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm space-y-2"
     >
-      {{ serverError }}
+      <div class="flex items-start">
+        <svg class="h-5 w-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+        </svg>
+        <div>
+          <p class="font-medium">{{ serverError }}</p>
+          <p v-if="remainingAttempts < MAX_ATTEMPTS" class="text-sm text-red-500/80 mt-1">
+            {{ remainingAttempts }} attempts remaining before temporary lockout
+          </p>
+        </div>
+      </div>
     </div>
 
     <!-- Display Name -->

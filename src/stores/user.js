@@ -1,198 +1,231 @@
 import { defineStore } from 'pinia'
+import { userDb } from '../services/userDb'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    // User Identity
     user: null,
-    email: null,
-    phone: null,
-    verificationStatus: {
-      email: false,
-      phone: false
+    isLoggedIn: false,
+    isAdmin: false,
+    isExplorer: false,
+    isVerified: false,
+    displayName: null,
+    cosmicalEmail: null,
+    explorerExpiry: null,
+    verificationDetails: {
+      email: null,
+      phone: null,
+      simNumber: null,
+      status: 'pending',
+      completedSteps: []
     },
-
-    // Space Configuration
     space: {
       theme: null,
-      visibility: 'private',
-      accessibility: {
-        public: false,
-        friends: true,
-        private: true
-      },
-      boundaries: {
-        size: 'medium',
-        expandable: true
-      },
-      template: null
+      visibility: 'private'
     },
-
-    // CSMCL.ID
-    csmclId: {
-      cosmicalName: null,
-      cosmicalEmail: null,
-      recoveryPhrase: null,
-      spaceBinding: null,
-      confirmed: false
-    },
-
-    // Wallet
     wallet: {
-      address: null,
       connected: false,
-      assets: []
+      address: null
     },
-
-    // Onboarding Progress
-    onboardingStep: 'identity', // identity -> space -> csmclId -> wallet -> complete
+    spaceMetrics: {
+      activity: { interactions: 0, chatter: 0 },
+      network: { connections: 0, pending: 0 },
+      transactions: { sent: 0, received: 0 },
+      social: { shares: 0, engagement: 0 },
+      requests: { sent: 0, received: 0 },
+      traffic: { inbound: 0, outbound: 0 }
+    },
     stepProgress: {
-      identity: {
-        started: false,
-        completed: false
-      },
       space: {
-        started: false,
-        completed: false
+        completed: false,
+        progress: 0
       },
-      csmclId: {
-        started: false,
-        completed: false
+      network: {
+        completed: false,
+        progress: 0
       },
       wallet: {
-        started: false,
-        completed: false
+        completed: false,
+        progress: 0
       }
     }
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.user,
-    currentStep: (state) => state.onboardingStep,
-    canProceedToSpace: (state) => 
-      state.stepProgress.identity.completed &&
-      state.verificationStatus.email &&
-      state.verificationStatus.phone,
-    
-    canProceedToCsmclId: (state) =>
-      state.stepProgress.space.completed &&
-      state.space.theme &&
-      state.space.template,
-    
-    canProceedToWallet: (state) =>
-      state.stepProgress.csmclId.completed &&
-      state.csmclId.confirmed,
-    
-    isOnboardingComplete: (state) =>
-      state.stepProgress.wallet.completed &&
-      state.wallet.connected,
-    
-    spaceConfiguration: (state) => state.space,
-    csmclIdDetails: (state) => state.csmclId
+    isExplorerExpired: (state) => {
+      if (!state.explorerExpiry) return false
+      return new Date(state.explorerExpiry) < new Date()
+    },
+
+    verificationProgress: (state) => {
+      const steps = ['identity', 'contact', 'review']
+      return {
+        completed: state.verificationDetails.completedSteps.length,
+        total: steps.length,
+        percent: (state.verificationDetails.completedSteps.length / steps.length) * 100
+      }
+    },
+
+    // Space Progress
+    spaceProgress: (state) => {
+      if (state.stepProgress.space.completed) return 100
+      if (!state.stepProgress.space.completed) return state.stepProgress.space.progress
+
+      let progress = 0
+      if (state.space.theme) progress += 20
+      if (state.space.visibility) progress += 20
+      if (state.space.accessibility) progress += 20
+      if (state.space.boundaries) progress += 20
+      if (state.space.template) progress += 20
+      return progress
+    },
+
+    // Wallet Progress
+    walletProgress: (state) => {
+      if (state.stepProgress.wallet.completed) return 100
+      if (!state.stepProgress.wallet.completed) return state.stepProgress.wallet.progress
+
+      let progress = 0
+      if (state.wallet.address) progress += 50
+      if (state.wallet.connected) progress += 50
+      return progress
+    },
+
+    // Space Activity Stats
+    spaceActivity: (state) => ({
+      interactions: state.spaceMetrics.activity.interactions,
+      chatter: state.spaceMetrics.activity.chatter
+    }),
+
+    // Network Stats
+    networkStats: (state) => ({
+      connections: state.spaceMetrics.network.connections,
+      pending: state.spaceMetrics.network.pending
+    }),
+
+    // Transaction Stats
+    transactionStats: (state) => ({
+      sent: state.spaceMetrics.transactions.sent,
+      received: state.spaceMetrics.transactions.received
+    }),
+
+    // Social Stats
+    socialStats: (state) => ({
+      shares: state.spaceMetrics.social.shares,
+      engagement: state.spaceMetrics.social.engagement
+    }),
+
+    // Request Stats
+    requestStats: (state) => ({
+      sent: state.spaceMetrics.requests.sent,
+      received: state.spaceMetrics.requests.received
+    }),
+
+    // Traffic Stats
+    trafficStats: (state) => ({
+      inbound: state.spaceMetrics.traffic.inbound,
+      outbound: state.spaceMetrics.traffic.outbound
+    })
   },
 
   actions: {
-    // Identity Verification
-    async verifyEmail(email) {
-      // API call to verify email
-      this.verificationStatus.email = true
-      this.email = email
-    },
-
-    async verifyPhone(phone) {
-      // API call to verify phone
-      this.verificationStatus.phone = true
-      this.phone = phone
-    },
-
-    // Space Setup
-    setSpaceTheme(theme) {
-      this.space.theme = theme
-    },
-
-    setSpaceVisibility(visibility) {
-      this.space.visibility = visibility
-    },
-
-    setSpaceAccessibility(settings) {
-      this.space.accessibility = {
-        ...this.space.accessibility,
-        ...settings
+    checkAndHandleExplorerExpiry() {
+      if (this.isExplorerExpired && this.isExplorer) {
+        this.logout()
+        return true
       }
+      return false
     },
 
-    setSpaceBoundaries(boundaries) {
-      this.space.boundaries = {
-        ...this.space.boundaries,
-        ...boundaries
-      }
-    },
-
-    setSpaceTemplate(template) {
-      this.space.template = template
-    },
-
-    // CSMCL.ID Creation
-    async setupCsmclId(details) {
-      if (!this.canProceedToCsmclId) {
-        throw new Error('Complete space setup first')
-      }
-
-      this.csmclId = {
-        ...this.csmclId,
-        ...details,
-        spaceBinding: {
-          spaceId: generateSpaceId(),
-          timestamp: new Date().toISOString()
+    async login({ cosmicalName }) {
+      try {
+        const user = userDb.findUser(cosmicalName)
+        if (!user) {
+          console.error('User not found:', cosmicalName)
+          return false
         }
+
+        // Set user state
+        this.user = user
+        this.isLoggedIn = true
+        this.isAdmin = user.role === 'admin'
+        this.isExplorer = user.role === 'explorer'
+        this.isVerified = user.isVerified
+        this.displayName = user.displayName
+        this.cosmicalEmail = user.email
+        
+        if (user.role === 'explorer') {
+          const expiryTime = new Date()
+          expiryTime.setDate(expiryTime.getDate() + 10) // 10 days from now
+          this.explorerExpiry = expiryTime.toISOString()
+          userDb.updateUser(cosmicalName, { explorerExpiry: this.explorerExpiry })
+        }
+
+        return true
+      } catch (error) {
+        console.error('Login error:', error)
+        return false
       }
     },
 
-    async confirmCsmclId() {
-      if (!this.csmclId.cosmicalName || !this.csmclId.cosmicalEmail) {
-        throw new Error('CSMCL.ID details incomplete')
-      }
+    async register(userData) {
+      try {
+        const success = userDb.createUser({
+          ...userData,
+          role: 'user',
+          isVerified: false,
+          space: {
+            theme: 'default',
+            visibility: 'private'
+          }
+        })
 
-      this.csmclId.confirmed = true
-      // API call to register permanent CSMCL.ID
-    },
-
-    // Wallet Integration
-    async connectWallet(address) {
-      if (!this.canProceedToWallet) {
-        throw new Error('Confirm CSMCL.ID first')
-      }
-
-      this.wallet.address = address
-      this.wallet.connected = true
-      // Initialize space assets
-    },
-
-    // Progress Tracking
-    startStep(step) {
-      if (this.stepProgress[step]) {
-        this.stepProgress[step].started = true
+        if (success) {
+          return this.login({ cosmicalName: userData.cosmicalName })
+        }
+        return false
+      } catch (error) {
+        console.error('Registration error:', error)
+        return false
       }
     },
 
-    completeStep(step) {
-      if (this.stepProgress[step]) {
-        this.stepProgress[step].completed = true
-        this.advanceToNextStep(step)
+    async loginAsExplorer(cosmicalName = 'CSMCL.Explorer') {
+      try {
+        const success = await this.login({ cosmicalName })
+        if (success) {
+          // Update last login for explorer
+          userDb.updateUser(cosmicalName, { 
+            lastLogin: new Date().toISOString() 
+          })
+        }
+        return success
+      } catch (error) {
+        console.error('Explorer login error:', error)
+        return false
       }
     },
 
-    advanceToNextStep(currentStep) {
-      const steps = ['identity', 'space', 'csmclId', 'wallet', 'complete']
-      const currentIndex = steps.indexOf(currentStep)
-      
-      if (currentIndex < steps.length - 1) {
-        this.onboardingStep = steps[currentIndex + 1]
-      }
-    },
-
-    // Reset
-    resetOnboarding() {
+    logout() {
       this.$reset()
+      return true
+    },
+
+    updateProfile(updates) {
+      try {
+        if (!this.user?.cosmicalName) {
+          throw new Error('No user logged in')
+        }
+
+        const success = userDb.updateUser(this.user.cosmicalName, updates)
+        if (success) {
+          Object.assign(this.user, updates)
+          return true
+        }
+        return false
+      } catch (error) {
+        console.error('Profile update error:', error)
+        return false
+      }
     }
   },
 
@@ -202,12 +235,10 @@ export const useUserStore = defineStore('user', {
       {
         key: 'user-store',
         storage: localStorage,
-        paths: ['user', 'email', 'phone', 'space', 'onboardingStep', 'stepProgress']
+        paths: ['user', 'isLoggedIn', 'isAdmin', 'isExplorer', 'isVerified', 
+                'displayName', 'cosmicalEmail', 'explorerExpiry', 
+                'verificationDetails', 'space', 'wallet', 'spaceMetrics', 'stepProgress']
       }
     ]
   }
 })
-
-function generateSpaceId() {
-  return 'sp_' + Math.random().toString(36).substr(2, 9)
-}

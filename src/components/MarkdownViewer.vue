@@ -11,210 +11,116 @@ const props = defineProps({
   }
 })
 
-const showCheatSheet = ref(false)
-const activeTab = ref('basic')
+const showHints = ref(false)
 
 const docsStore = useDocsStore()
 
+// Configure marked options
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+  headerIds: true,
+  highlight: function(code, lang) {
+    return code
+  }
+})
+
 const content = computed(() => {
-  const raw = docsStore.markdownContent[props.section] || ''
-  return DOMPurify.sanitize(marked(raw))
+  const raw = docsStore.currentContent
+  const html = marked(raw)
+  return DOMPurify.sanitize(html)
 })
 
 const isEditing = computed(() => docsStore.isEditing)
-const rawContent = computed(() => docsStore.markdownContent[props.section] || '')
+const rawContent = computed(() => docsStore.currentContent)
 
 const updateContent = (event) => {
   docsStore.setContent(props.section, event.target.value)
 }
 
-const markdownBasics = [
-  { syntax: '# Heading 1', description: 'Main title' },
-  { syntax: '## Heading 2', description: 'Section title' },
-  { syntax: '### Heading 3', description: 'Subsection' },
-  { syntax: '**bold**', description: 'Bold text' },
-  { syntax: '*italic*', description: 'Italic text' },
-  { syntax: '***bold italic***', description: 'Bold and italic' },
-  { syntax: '~~strikethrough~~', description: 'Strikethrough' },
-  { syntax: '> quote', description: 'Blockquote' },
-  { syntax: '---', description: 'Horizontal line' }
-]
-
-const markdownLists = [
-  { syntax: '- item', description: 'Bullet list' },
-  { syntax: '  - nested', description: 'Nested bullet' },
-  { syntax: '1. item', description: 'Numbered list' },
-  { syntax: '  1. nested', description: 'Nested number' },
-  { syntax: '- [ ] task', description: 'Todo (unchecked)' },
-  { syntax: '- [x] task', description: 'Todo (checked)' }
-]
-
-const markdownLinks = [
-  { syntax: '[link](url)', description: 'Basic link' },
-  { syntax: '[link](url "title")', description: 'Link with title' },
-  { syntax: '![alt](image-url)', description: 'Image' },
-  { syntax: '[![alt](img-url)](link-url)', description: 'Linked image' },
-  { syntax: '<https://url.com>', description: 'Auto-link' }
-]
-
-const markdownCode = [
-  { syntax: '`inline code`', description: 'Inline code' },
-  { syntax: '```language\ncode block\n```', description: 'Code block' },
-  { syntax: '    code block', description: 'Indented code' },
-  { syntax: '```js\nconst x = 1;\n```', description: 'JavaScript' },
-  { syntax: '```python\ndef fn():\n```', description: 'Python' }
-]
-
-const markdownTables = [
-  { 
-    syntax: '| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |',
-    description: 'Basic table'
-  },
-  { 
-    syntax: '| Left | Center | Right |\n|:-----|:------:|------:|\n|Text  | Text   | Text  |',
-    description: 'Aligned table'
-  }
-]
-
-const markdownExtended = [
-  { syntax: 'Term\n: Definition', description: 'Definition list' },
-  { syntax: 'H~2~O', description: 'Subscript' },
-  { syntax: 'X^2^', description: 'Superscript' },
-  { syntax: '==highlight==', description: 'Highlight' },
-  { syntax: ':emoji:', description: 'Emoji code' }
+const mdHints = [
+  { syntax: '# Heading 1', desc: 'Main title' },
+  { syntax: '## Heading 2', desc: 'Section title' },
+  { syntax: '**bold**', desc: 'Bold text' },
+  { syntax: '*italic*', desc: 'Italic text' },
+  { syntax: '[link](url)', desc: 'Link' },
+  { syntax: '- item', desc: 'List item' },
+  { syntax: '```code```', desc: 'Code block' },
+  { syntax: '> quote', desc: 'Blockquote' }
 ]
 </script>
 
 <template>
-  <div class="markdown-container">
+  <div class="markdown-container relative">
     <!-- Editor Controls -->
-    <div class="flex items-center justify-between mb-4">
-      <div class="flex items-center space-x-4">
+    <div v-if="isEditing" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <button
+          @click="showHints = !showHints"
+          class="px-3 py-1.5 text-sm text-gray-400 hover:text-blue-300 
+                 transition-colors duration-200 flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+          </svg>
+          <span>{{ showHints ? 'Hide Hints' : 'Show Hints' }}</span>
+        </button>
+
         <button
           @click="docsStore.toggleEditing()"
-          class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700 
-                 transition-colors duration-200 shadow-lg shadow-gray-900/20"
+          class="px-3 py-1.5 text-sm bg-blue-500/20 text-blue-300 rounded-md 
+                 hover:bg-blue-500/30 transition-colors duration-200"
         >
-          {{ isEditing ? 'Preview' : 'Edit' }}
-        </button>
-        
-        <!-- Markdown Cheat Sheet Button -->
-        <button
-          v-if="isEditing"
-          @click="showCheatSheet = !showCheatSheet"
-          class="px-3 py-2 text-sm text-gray-400 hover:text-white transition-colors
-                 hover:bg-gray-800/50 rounded-md"
-        >
-          {{ showCheatSheet ? 'Hide Syntax Help' : 'Show Syntax Help' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Markdown Cheat Sheet -->
-    <div
-      v-if="isEditing && showCheatSheet"
-      class="mb-4 bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden"
-    >
-      <!-- Tabs -->
-      <div class="flex border-b border-gray-700">
-        <button
-          v-for="(tab, name) in {
-            basic: 'Basic',
-            lists: 'Lists',
-            links: 'Links',
-            code: 'Code',
-            tables: 'Tables',
-            extended: 'Extended'
-          }"
-          :key="name"
-          @click="activeTab = name"
-          class="px-4 py-2 text-sm transition-colors"
-          :class="[
-            activeTab === name
-              ? 'bg-gray-800 text-white font-medium'
-              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-          ]"
-        >
-          {{ tab }}
+          Preview
         </button>
       </div>
 
-      <!-- Content -->
-      <div class="p-4">
-        <div v-if="activeTab === 'basic'" class="syntax-grid">
-          <template v-for="item in markdownBasics" :key="item.syntax">
-            <div class="syntax-item">
-              <code class="syntax">{{ item.syntax }}</code>
-              <span class="description">{{ item.description }}</span>
-            </div>
-          </template>
-        </div>
-
-        <div v-if="activeTab === 'lists'" class="syntax-grid">
-          <template v-for="item in markdownLists" :key="item.syntax">
-            <div class="syntax-item">
-              <code class="syntax">{{ item.syntax }}</code>
-              <span class="description">{{ item.description }}</span>
-            </div>
-          </template>
-        </div>
-
-        <div v-if="activeTab === 'links'" class="syntax-grid">
-          <template v-for="item in markdownLinks" :key="item.syntax">
-            <div class="syntax-item">
-              <code class="syntax">{{ item.syntax }}</code>
-              <span class="description">{{ item.description }}</span>
-            </div>
-          </template>
-        </div>
-
-        <div v-if="activeTab === 'code'" class="syntax-grid">
-          <template v-for="item in markdownCode" :key="item.syntax">
-            <div class="syntax-item">
-              <code class="syntax">{{ item.syntax }}</code>
-              <span class="description">{{ item.description }}</span>
-            </div>
-          </template>
-        </div>
-
-        <div v-if="activeTab === 'tables'" class="syntax-grid">
-          <template v-for="item in markdownTables" :key="item.syntax">
-            <div class="syntax-item col-span-2">
-              <code class="syntax whitespace-pre">{{ item.syntax }}</code>
-              <span class="description">{{ item.description }}</span>
-            </div>
-          </template>
-        </div>
-
-        <div v-if="activeTab === 'extended'" class="syntax-grid">
-          <template v-for="item in markdownExtended" :key="item.syntax">
-            <div class="syntax-item">
-              <code class="syntax">{{ item.syntax }}</code>
-              <span class="description">{{ item.description }}</span>
-            </div>
-          </template>
+      <!-- Markdown Hints -->
+      <div v-if="showHints" class="bg-gray-800/50 rounded-lg border border-gray-700/50 p-3 mb-4">
+        <div class="text-sm text-gray-400 mb-2">Common Markdown Elements:</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div 
+            v-for="hint in mdHints" 
+            :key="hint.syntax"
+            class="bg-gray-800/70 rounded p-2 text-sm"
+          >
+            <code class="text-blue-300 block mb-1">{{ hint.syntax }}</code>
+            <span class="text-gray-400 text-xs">{{ hint.desc }}</span>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Editor -->
-    <div v-if="isEditing" class="editor-container">
+      
       <textarea
         v-model="rawContent"
         @input="updateContent"
-        class="w-full h-64 p-4 bg-gray-800 text-white rounded-lg border border-gray-700 
-               focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50
-               font-mono text-sm resize-y shadow-lg shadow-gray-900/20"
+        class="w-full h-[600px] p-4 bg-gray-800/50 text-gray-300 
+               rounded-md border border-gray-700/50 focus:outline-none 
+               focus:ring-2 focus:ring-blue-500/50 font-mono text-sm"
         placeholder="Enter markdown content..."
       ></textarea>
     </div>
 
     <!-- Preview -->
-    <div
-      v-else
-      class="prose prose-invert max-w-none"
-      v-html="content"
-    ></div>
+    <div v-else>
+      <div class="flex justify-end mb-4">
+        <button
+          @click="docsStore.toggleEditing()"
+          class="px-3 py-1.5 text-sm text-gray-400 hover:text-blue-300 
+                 transition-colors duration-200 flex items-center gap-2"
+        >
+          <span>Edit</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Content -->
+      <div 
+        class="prose prose-invert prose-blue max-w-none group"
+        v-html="content"
+      ></div>
+    </div>
   </div>
 </template>
 
@@ -223,50 +129,32 @@ const markdownExtended = [
   @apply text-gray-300;
 }
 
-.prose h1,
-.prose h2,
-.prose h3,
-.prose h4,
-.prose h5,
-.prose h6 {
-  @apply text-white font-bold mt-8 mb-4;
-}
-
 .prose h1 {
-  @apply text-3xl;
+  @apply text-white border-b border-gray-800 pb-4 mb-6;
 }
 
 .prose h2 {
-  @apply text-2xl;
+  @apply text-white border-b border-gray-800/50 pb-2 mt-8;
 }
 
 .prose h3 {
-  @apply text-xl;
+  @apply text-gray-100;
 }
 
-.prose p {
-  @apply mb-4;
+.prose strong {
+  @apply text-white;
 }
 
 .prose a {
   @apply text-blue-400 hover:text-blue-300 transition-colors duration-200;
 }
 
-.prose ul,
-.prose ol {
-  @apply my-4 pl-6;
-}
-
-.prose li {
-  @apply mb-2;
-}
-
 .prose code {
-  @apply bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono text-blue-300;
+  @apply bg-gray-800/50 text-gray-300 px-1.5 py-0.5 rounded-md text-sm;
 }
 
 .prose pre {
-  @apply bg-gray-800 p-4 rounded-lg overflow-x-auto my-4 shadow-lg shadow-gray-900/20;
+  @apply bg-gray-800/50 border border-gray-700/50 rounded-lg;
 }
 
 .prose pre code {
@@ -274,72 +162,26 @@ const markdownExtended = [
 }
 
 .prose blockquote {
-  @apply border-l-4 border-gray-700 pl-4 my-4 italic text-gray-400;
+  @apply border-l-4 border-blue-500/30 bg-blue-500/5 pl-4 py-1 text-gray-400;
 }
 
-.prose hr {
-  @apply border-gray-700 my-8;
+.prose ul {
+  @apply space-y-1;
 }
 
-.prose table {
-  @apply w-full my-6 border-collapse;
-}
-
-.prose th,
-.prose td {
-  @apply border border-gray-700 px-4 py-2;
-}
-
-.prose th {
-  @apply bg-gray-800 font-semibold;
-}
-
-.prose img {
-  @apply rounded-lg max-w-full my-4 shadow-lg shadow-gray-900/20;
-}
-
-/* Syntax Guide Styles */
-.syntax-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 gap-3;
-}
-
-.syntax-item {
-  @apply flex flex-col space-y-1;
-}
-
-.syntax {
-  @apply text-blue-300 bg-gray-800/80 px-2 py-1.5 rounded font-mono text-sm
-         shadow-sm shadow-gray-900/10 border border-gray-700/50;
-}
-
-.description {
-  @apply text-gray-400 text-sm;
-}
-
-/* Add subtle hover effects */
-.syntax-item:hover .syntax {
-  @apply bg-gray-800 border-gray-700;
-}
-
-.syntax-item:hover .description {
+.prose li {
   @apply text-gray-300;
 }
 
-/* Transitions */
-.syntax-item {
-  @apply transition-all duration-200;
+.prose table {
+  @apply border-collapse w-full;
 }
 
-/* Scrollbar Styling */
-textarea::-webkit-scrollbar {
-  @apply w-2;
+.prose th {
+  @apply bg-gray-800/50 text-left py-2 px-4 border border-gray-700/50;
 }
 
-textarea::-webkit-scrollbar-track {
-  @apply bg-gray-900/50 rounded-r;
-}
-
-textarea::-webkit-scrollbar-thumb {
-  @apply bg-gray-700 rounded hover:bg-gray-600 transition-colors;
+.prose td {
+  @apply py-2 px-4 border border-gray-700/50;
 }
 </style>

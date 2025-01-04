@@ -1,12 +1,39 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import { setupRouteGuards } from './guards'
 import Home from '../views/Home.vue'
 
 const routes = [
   {
     path: '/',
     name: 'home',
-    component: Home
+    component: Home,
+    beforeEnter: (to, from, next) => {
+      const store = useUserStore()
+      if (store.isExplorer) {
+        next({ name: 'explorer' })
+      } else {
+        next()
+      }
+    }
+  },
+  {
+    path: '/explorer',
+    name: 'explorer',
+    component: () => import('../views/ExplorerLanding.vue'),
+    meta: { requiresExplorer: true }
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('../views/AdminDashboard.vue'),
+    meta: { requiresAdmin: true }
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('../views/UserDashboard.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/login',
@@ -15,7 +42,7 @@ const routes = [
     beforeEnter: (to, from, next) => {
       const store = useUserStore()
       if (store.isLoggedIn) {
-        next({ name: 'home' })
+        next({ name: store.isExplorer ? 'explorer' : 'home' })
       } else {
         next()
       }
@@ -35,38 +62,18 @@ const routes = [
   {
     path: '/onboarding',
     component: () => import('../views/Onboarding.vue'),
-    redirect: '/onboarding/identity',
+    redirect: '/onboarding/verification',
     children: [
       {
-        path: 'identity',
-        name: 'identity',
-        component: () => import('../components/registration/IdentityForm.vue')
-      },
-      {
-        path: 'verify',
-        name: 'verify',
-        component: () => import('../components/registration/VerificationForm.vue'),
-        beforeEnter: (to, from, next) => {
-          const store = useUserStore()
-          if (!store.stepProgress?.identity?.completed) {
-            next({ name: 'identity' })
-          } else {
-            next()
-          }
-        }
+        path: 'verification',
+        name: 'verification',
+        component: () => import('../components/onboarding/AccountVerification.vue')
       },
       {
         path: 'space',
         name: 'space',
         component: () => import('../components/space-setup/SpaceSetup.vue'),
-        beforeEnter: (to, from, next) => {
-          const store = useUserStore()
-          if (!store.stepProgress?.verify?.completed) {
-            next({ name: 'verify' })
-          } else {
-            next()
-          }
-        }
+        meta: { requiresVerification: true }
       }
     ]
   },
@@ -83,18 +90,41 @@ const router = createRouter({
   routes
 })
 
+// Setup route guards
+setupRouteGuards(router)
+
 // Navigation guard for protected routes
 router.beforeEach((to, from, next) => {
   const store = useUserStore()
   
+  // Check for verification requirement
+  if (to.meta.requiresVerification && !store.isVerified) {
+    next({ name: 'verification' })
+    return
+  }
+
+  // Check for explorer-only routes
+  if (to.meta.requiresExplorer && !store.isExplorer) {
+    next({ name: 'home' })
+    return
+  }
+
+  // Check for admin-only routes
+  if (to.meta.requiresAdmin && !store.isAdmin) {
+    next({ name: 'home' })
+    return
+  }
+
+  // Check for auth required routes
   if (to.meta.requiresAuth && !store.isLoggedIn) {
     next({
       name: 'login',
       query: { redirect: to.fullPath }
     })
-  } else {
-    next()
+    return
   }
+
+  next()
 })
 
 export default router

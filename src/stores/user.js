@@ -11,6 +11,13 @@ export const useUserStore = defineStore('user', {
     displayName: null,
     cosmicalEmail: null,
     explorerExpiry: null,
+    achievements: [],
+    unlockedFeatures: [],
+    gameState: {
+      currentLevel: 'novice',
+      xp: 0,
+      badges: []
+    },
     verificationDetails: {
       email: null,
       phone: null,
@@ -124,7 +131,15 @@ export const useUserStore = defineStore('user', {
     trafficStats: (state) => ({
       inbound: state.spaceMetrics.traffic.inbound,
       outbound: state.spaceMetrics.traffic.outbound
-    })
+    }),
+
+    currentLevel: (state) => state.gameState.currentLevel,
+
+    totalXP: (state) => state.gameState.xp,
+
+    earnedBadges: (state) => state.gameState.badges,
+
+    completedAchievements: (state) => state.achievements.length,
   },
 
   actions: {
@@ -226,6 +241,43 @@ export const useUserStore = defineStore('user', {
         console.error('Profile update error:', error)
         return false
       }
+    },
+
+    async addAchievement(achievement) {
+      if (this.achievements.some(a => a.id === achievement.id)) return
+      
+      this.achievements.push(achievement)
+      this.gameState.xp += achievement.xp
+      
+      // Update badges if achievement includes one
+      if (achievement.reward && achievement.reward.includes('badge')) {
+        this.gameState.badges.push(achievement.reward)
+      }
+      
+      await userDb.updateUser(this.user?.cosmicalName, {
+        achievements: this.achievements,
+        gameState: this.gameState
+      })
+    },
+    
+    async updateGameState(updates) {
+      this.gameState = {
+        ...this.gameState,
+        ...updates
+      }
+      
+      await userDb.updateUser(this.user?.cosmicalName, {
+        gameState: this.gameState
+      })
+    },
+    
+    async unlockFeature(feature) {
+      if (!this.unlockedFeatures.includes(feature)) {
+        this.unlockedFeatures.push(feature)
+        await userDb.updateUser(this.user?.cosmicalName, {
+          unlockedFeatures: this.unlockedFeatures
+        })
+      }
     }
   },
 
@@ -237,7 +289,8 @@ export const useUserStore = defineStore('user', {
         storage: localStorage,
         paths: ['user', 'isLoggedIn', 'isAdmin', 'isExplorer', 'isVerified', 
                 'displayName', 'cosmicalEmail', 'explorerExpiry', 
-                'verificationDetails', 'space', 'wallet', 'spaceMetrics', 'stepProgress']
+                'verificationDetails', 'space', 'wallet', 'spaceMetrics', 'stepProgress',
+                'achievements', 'unlockedFeatures', 'gameState']
       }
     ]
   }

@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  onboarding:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:4000
+      - USER_SERVICE_URL=http://user-service:4001
+      - CORE_PLATFORM_URL=http://core-platform:8080
+    depends_on:
+      - auth-service
+      - user-service
+
+  auth-service:
+    image: auth-service
+    ports:
+      - "4000:4000"
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=redis://redis:6379
+
+  user-service:
+    image: user-service
+    ports:
+      - "4001:4001"
+    environment:
+      - DB_URL=postgresql://postgres:5432/users
+      - AUTH_SERVICE_URL=http://auth-service:4000
+
+  core-platform:
+    image: core-platform
+    ports:
+      - "8080:8080"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:4000
+      - USER_SERVICE_URL=http://user-service:4001
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

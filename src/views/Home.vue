@@ -6,23 +6,23 @@ const userStore = useUserStore()
 
 const features = [
   {
-    title: 'CSMCL.ID',
-    description: 'Your unique digital identity in the CSMCL ecosystem',
+    title: 'CSMCL.SPACE.ID',
+    description: 'Unique identifier for your Digital Entity in the CSMCL ecosystem',
     icon: '🆔'
   },
   {
-    title: 'Space Management',
-    description: 'Secure and efficient storage solutions for your digital assets',
+    title: 'CSMCL.SPACE SOCIAL',
+    description: 'Share as usual but without prying eyes, secure and private',
     icon: '📦'
   },
   {
-    title: 'Flow Integration',
-    description: 'Seamless blockchain integration with Flow',
+    title: '  Blockchain Integration',
+    description: 'Seamless blockchain integration with Blocto / Flow network',
     icon: '⛓️'
   },
   {
-    title: 'Smart Verification',
-    description: 'Advanced verification system for enhanced security',
+    title: 'Privacy & Security first',
+    description: 'Advanced encryption and security measures to protect your data',
     icon: '✅'
   }
 ]
@@ -62,11 +62,10 @@ setInterval(rotateQuote, 10000)
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div class="text-center">
           <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
-            Welcome to <span class="text-blue-400">CSMCL.SPACE</span>
+            COSMICAL YOU <span class="text-yellow-100">@</span> <span class="text-blue-400">Cosmical.ME</span>
           </h1>
           <p class="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
-            Your gateway to secure digital identity and seamless blockchain integration.
-            Experience the future of decentralized space management.
+            PRIVATE SECURE SOCIAL DIGITAL IMMERSION NETWORK UNIQUE DIGITAL EXPERIENCE INCLUSSIVE ECOSYSTEM
           </p>
           
           <!-- CTA Buttons -->
@@ -94,10 +93,12 @@ setInterval(rotateQuote, 10000)
 
     <!-- Features Section -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-      <h2 class="text-3xl font-bold text-center text-white mb-16">
-        Powerful Features for the Future
+      <h3 class="text-2xl font-bold text-center text-white mb-16">
+         PLEASE NOTE!! THIS IS A WORK IN PROGRESS, NOT ALL FEATURES ARE ACTIVE YET 
+      </h3>
+      <h2  class="text-3xl font-bold text-center text-white mb-16">
+        USE <span class="text-blue-400">EXPLORER MODE</span> TO NAVIGATE THE SITE
       </h2>
-      
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <div
           v-for="feature in features"

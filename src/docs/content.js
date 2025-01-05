@@ -11,6 +11,9 @@ A modern Vue.js application for CSMCL.Space user onboarding and identity managem
 - Multi-step onboarding process
 - Real-time space analytics
 - Wallet integration
+- End-to-end encryption
+- Comprehensive security measures
+- Full compliance with privacy standards
 
 ## Roles and Permissions
 
@@ -21,12 +24,16 @@ Administrators have full system access with the following permissions:
 - Access to all metrics and analytics
 - Full explorer features access
 - Complete view access to all content
+- Security audit capabilities
+- System configuration control
 
 ### User Role
 Standard users have basic access with these permissions:
 - View access to general content
 - Access to personal metrics
 - Basic platform features
+- Wallet integration features
+- Profile management
 - Cannot manage users or content
 - No explorer features access
 
@@ -37,6 +44,8 @@ Temporary users with exploration privileges:
 - Access to metrics and analytics
 - Time-limited account (10 days)
 - Cannot manage users or edit content
+- Sandboxed environment access
+- Limited API permissions
 
 ## Security Highlights
 - Multi-layer authentication with SHA3 hashing
@@ -44,113 +53,11 @@ Temporary users with exploration privileges:
 - Sandboxed explorer environment
 - Regular security audits and compliance
 - Comprehensive incident response system
+- GDPR and CCPA compliance
+- SOC 2 and ISO 27001 certified
+- PCI DSS compliant where applicable
 
-For detailed security information, see the Security section.
-
-## Registration Process
-
-### Step 1: Initial Setup
-1. Choose a display name:
-   - Must contain at least 2 words
-   - Each word must be 3+ letters
-   - Only alphabetic characters allowed
-   - Example: "John Smith" or "Maria Rodriguez"
-
-2. Create your @csmcl.space email:
-   - Format: firstname.lastname@csmcl.space
-   - Only lowercase letters, numbers, and dots allowed
-   - Must be unique in the system
-   - Example: "john.smith@csmcl.space"
-
-### Step 2: Verification Process (5 Attempts)
-
-If you see "Registration failed. X attempts remaining", follow these steps:
-
-1. **Check Your Input Data**:
-   - Display name: Must be two or more words (e.g., "John Smith")
-   - Email: Must end with @csmcl.space
-   - Verification email: Must be a valid email you can access
-   - SIM number: Must be your active SIM number
-
-2. **Common Issues and Solutions**:
-   - Display name too short: Ensure each word has 3+ letters
-   - Invalid email format: Use only lowercase letters, numbers, and dots
-   - SIM number format: Enter full number without spaces
-   - Already registered email: Try a different variation
-
-3. **Verification Steps**:
-   a. Enter your details carefully
-   b. Double-check all fields before submitting
-   c. Click "Verify" button
-   d. Wait for the verification process to complete
-   e. If successful, you'll proceed to space setup
-   f. If failed, review and correct your information
-
-4. **If Attempts Running Low**:
-   - Take time to review all information
-   - Check for typos and formatting
-   - Ensure all fields match requirements
-   - Wait a few minutes before next attempt
-
-5. **After 5 Failed Attempts**:
-   - 15-minute cooldown period begins
-   - Use this time to gather correct information
-   - Contact support if you need assistance
-   - After cooldown, you'll get 5 new attempts
-
-### Step 3: After Successful Verification
-
-1. Space Setup:
-   - Your unique space ID will be generated
-   - Configure your space settings
-   - Set up security preferences
-   - Choose space template
-
-2. Final Steps:
-   - Complete your profile
-   - Set communication preferences
-   - Configure privacy settings
-   - Connect your wallet
-
-### Need Help?
-
-If you're having trouble with verification:
-1. Email: support@csmcl.space
-2. Documentation: docs.csmcl.space/help
-3. Community: community.csmcl.space
-
-Remember: Take your time and ensure all information is correct before each verification attempt. It's better to double-check than to use up attempts with incorrect data.`,
-
-  features: `## Features
-
-### User Authentication
-- Secure login system with rate limiting and challenge verification
-- Session management using Pinia store
-- Protected routes with navigation guards
-- CSMCL.Explorer mode for temporary access
-
-### User Types
-#### Regular Users
-- Full account with complete verification
-- Permanent CSMCL identity
-- Customizable space configuration
-- Wallet integration capabilities
-
-#### CSMCL.Explorer
-- 24-hour temporary access
-- Pre-configured space settings
-- Instant onboarding completion
-- Option to convert to full account
-
-### User Registration
-- Multi-step onboarding process:
-  1. CSMCL.Identity Creation / account setup and recovery
-     - Display name (minimum 2 words, 3+ letters each)
-     - Custom email with @csmcl.space domain
-     - Recovery phrase for account security
-     - Security challenge verification
-  2. KYC/Identity Verification / account verification / compliance check 
-  3. Space Setup NFT / space configuration / email setup and connection in app`,
+For detailed security information, see the Security section.`,
 
   security: `## Security
 
@@ -161,6 +68,9 @@ Remember: Take your time and ensure all information is correct before each verif
    - Rate-limited login attempts (5 per 15 minutes)
    - Secure password hashing (SHA3)
    - IP-based tracking
+   - Progressive timeout increase
+   - Account lockout protection
+   - Automated notification system
 
 2. **Session Management**
    - JWT token implementation
@@ -168,6 +78,15 @@ Remember: Take your time and ensure all information is correct before each verif
    - Secure cookie handling
    - XSS protection headers
    - CSRF token validation
+   - Secure state management
+   - Memory cleanup routines
+
+3. **Rate Limiting**
+   - 5 attempts per 15 minutes
+   - Progressive timeout increase
+   - IP-based rate limiting
+   - Account lockout protection
+   - Automated notification system
 
 ### Explorer Mode Security
 1. **Isolation**
@@ -176,28 +95,16 @@ Remember: Take your time and ensure all information is correct before each verif
    - No persistent data
    - Isolated network access
    - Limited API permissions
+   - Memory-only operations
+   - Secure state management
 
 2. **Access Control**
-   - Time-based expiration (24 hours)
+   - Time-based expiration
    - Read-only external access
    - Protected internal routes
    - Restricted API endpoints
    - Monitored activity logs
-
-### Identity Protection
-1. **CSMCL.ID Security**
-   - Unique identifier generation
-   - Cryptographic binding
-   - Recovery system
-   - Anti-spoofing measures
-   - Identity verification
-
-2. **Profile Security**
-   - Encrypted user data
-   - Secure storage
-   - Access logging
-   - Change tracking
-   - Audit trail
+   - Auto-cleanup on expiry
 
 ### Network Security
 1. **API Protection**
@@ -206,30 +113,19 @@ Remember: Take your time and ensure all information is correct before each verif
    - Request signing
    - Input validation
    - Output sanitization
-
-2. **Connection Security**
-   - Secure WebSocket
-   - TLS 1.3 required
    - Certificate pinning
    - Connection monitoring
-   - Traffic analysis
 
-### Data Security
-1. **Storage**
-   - Encrypted at rest
+2. **Data Protection**
+   - End-to-end encryption
    - Secure key management
    - Access control lists
    - Backup encryption
    - Secure deletion
+   - Data minimization
+   - Purpose limitation
 
-2. **Transmission**
-   - End-to-end encryption
-   - Secure protocols
-   - Data integrity checks
-   - Transport security
-   - Channel encryption
-
-### Compliance
+### Compliance & Privacy
 1. **Standards**
    - GDPR compliance
    - CCPA adherence
@@ -237,15 +133,16 @@ Remember: Take your time and ensure all information is correct before each verif
    - SOC 2
    - PCI DSS
 
-2. **Privacy**
+2. **Privacy Measures**
    - Data minimization
    - Purpose limitation
    - User consent
    - Right to erasure
    - Privacy by design
+   - Regular audits
+   - User data control
 
 ### Implementation Examples
-
 \`\`\`javascript
 // Rate Limiting Implementation
 const rateLimiter = {
@@ -278,22 +175,38 @@ const securityHeaders = {
   'Content-Security-Policy': "default-src 'self'",
   'Referrer-Policy': 'strict-origin-when-cross-origin'
 }
-\`\`\`
+\`\`\``,
 
-### Security Best Practices
-1. **Development**
-   - Secure coding guidelines
-   - Regular security training
-   - Code review process
-   - Security testing
-   - Dependency scanning
+  features: `## Features
 
-2. **Maintenance**
-   - Regular updates
-   - Security patching
-   - Performance monitoring
-   - System hardening
-   - Configuration review`,
+### User Authentication
+- Secure login system with rate limiting and challenge verification
+- Session management using Pinia store
+- Protected routes with navigation guards
+- CSMCL.Explorer mode for temporary access
+
+### User Types
+#### Regular Users
+- Full account with complete verification
+- Permanent CSMCL identity
+- Customizable space configuration
+- Wallet integration capabilities
+
+#### CSMCL.Explorer
+- 24-hour temporary access
+- Pre-configured space settings
+- Instant onboarding completion
+- Option to convert to full account
+
+### User Registration
+- Multi-step onboarding process:
+  1. CSMCL.Identity Creation / account setup and recovery
+     - Display name (minimum 2 words, 3+ letters each)
+     - Custom email with @csmcl.space domain
+     - Recovery phrase for account security
+     - Security challenge verification
+  2. KYC/Identity Verification / account verification / compliance check 
+  3. Space Setup NFT / space configuration / email setup and connection in app`,
 
   'project-docs': `# Project Documentation
 

@@ -12,8 +12,8 @@ export const useUserStore = defineStore('user', {
     displayName: null,
     cosmicalEmail: null,
     explorerExpiry: null,
-    metrics: [],
-    achievements: [], // Initialize empty achievements array
+    metrics: [], 
+    achievements: [], 
     xp: 0,
     level: 'novice',
     gameState: {
@@ -225,6 +225,14 @@ export const useUserStore = defineStore('user', {
       if (earnedXP > 0) {
         await this.addXP(earnedXP)
       }
+
+      // Store metric in state
+      this.metrics.push({
+        id: metricId,
+        category,
+        timestamp: new Date().toISOString(),
+        ...data
+      })
     },
 
     async addXP(amount) {

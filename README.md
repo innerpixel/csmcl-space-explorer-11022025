@@ -1,6 +1,8 @@
 # CSMCL.Space Onboarding
 
-A modern Vue.js application for CSMCL.Space user onboarding and identity management. This application provides a seamless experience for users to create and manage their CSMCL identity, verify their account, set up their space, and connect their wallet.
+A modern Vue.js application for CSMCL.Space user onboarding and identity management. This application provides a seamless experience for users to create and manage their CSMCL identity, verify their account, set up their space, and connect their wallet. 
+
+>> HAVELY UNDER DEVELOPMENT PLS. KEEP IN MIND CAN CHANG ANY MINUTE!! 
 
 ## Security
 

@@ -10,54 +10,39 @@
       </div>
 
       <!-- Quick Actions -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div
+      <stats-grid>
+        <dashboard-card
           v-for="action in quickActions"
           :key="action.title"
-          class="bg-gray-800/30 backdrop-blur-lg rounded-xl border border-gray-700/50 p-6
-                 hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-500"
+          :title="action.title"
+          :icon="action.icon"
+          :description="action.description"
         >
-          <div class="text-3xl mb-4">{{ action.icon }}</div>
-          <h3 class="text-lg font-medium text-white">{{ action.title }}</h3>
-          <p class="text-gray-400 mt-2 text-sm">{{ action.description }}</p>
-          <router-link
-            :to="action.link"
-            class="inline-block mt-4 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-lg
-                   hover:bg-blue-500/20 transition-colors duration-300"
-          >
-            {{ action.buttonText }}
-          </router-link>
-        </div>
-      </div>
+          <template #footer>
+            <router-link
+              :to="action.link"
+              class="inline-block mt-4 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-lg
+                     hover:bg-blue-500/20 transition-colors duration-300"
+            >
+              {{ action.buttonText }}
+            </router-link>
+          </template>
+        </dashboard-card>
+      </stats-grid>
 
       <!-- Space Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div
+      <stats-grid>
+        <stat-card
           v-for="stat in spaceStats"
           :key="stat.label"
-          class="bg-gray-800/30 backdrop-blur-lg rounded-xl border border-gray-700/50 p-6
-                 hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-500"
-        >
-          <div class="flex items-center justify-between mb-4">
-            <div class="text-3xl">{{ stat.icon }}</div>
-            <div class="text-xs text-gray-500">Last 24h</div>
-          </div>
-          <h3 class="text-lg font-medium text-white">{{ stat.label }}</h3>
-          <div class="mt-2 space-y-1">
-            <template v-if="typeof stat.value === 'object'">
-              <div v-for="(value, key) in stat.value" :key="key" 
-                   class="flex justify-between items-center">
-                <span class="text-sm text-gray-400 capitalize">{{ key }}</span>
-                <span class="text-sm font-medium text-white">{{ value }}</span>
-              </div>
-            </template>
-            <template v-else>
-              <p class="text-gray-400">{{ stat.value }}</p>
-            </template>
-          </div>
-          <p class="text-xs text-gray-500 mt-3">{{ stat.description }}</p>
-        </div>
-      </div>
+          :label="stat.label"
+          :value="stats.stats[stat.key]"
+          :icon="stat.icon"
+          :description="stat.description"
+          :loading="stats.loading"
+          :error="stats.error"
+        />
+      </stats-grid>
     </div>
   </div>
 </template>
@@ -65,8 +50,13 @@
 <script setup>
 import { computed } from 'vue'
 import { useUserStore } from '../stores/user'
+import { useStats } from '../composables/useStats'
+import StatsGrid from '../components/dashboard/StatsGrid.vue'
+import DashboardCard from '../components/dashboard/DashboardCard.vue'
+import StatCard from '../components/dashboard/StatCard.vue'
 
 const userStore = useUserStore()
+const stats = useStats('user')
 
 const quickActions = computed(() => [
   {
@@ -95,19 +85,19 @@ const quickActions = computed(() => [
 const spaceStats = computed(() => [
   {
     label: 'Space Activity',
-    value: userStore.spaceActivity,
+    key: 'spaceActivity',
     icon: '🌟',
     description: 'Interactions and chatter traffic in your space'
   },
   {
     label: 'Network',
-    value: userStore.networkStats,
+    key: 'networkStats',
     icon: '🔗',
     description: 'Active connections and pending requests'
   },
   {
     label: 'Transactions',
-    value: userStore.transactionStats,
+    key: 'transactionStats',
     icon: '⚡',
     description: 'Total sent and received transactions'
   }

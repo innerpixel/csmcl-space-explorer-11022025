@@ -167,7 +167,7 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    async loginAsExplorer(cosmicalName = 'CSMCL.Explorer') {
+    async loginAsExplorer(cosmicalName = 'CSMCL EXPLORER') {
       try {
         const success = await this.login({ cosmicalName })
         if (success) {

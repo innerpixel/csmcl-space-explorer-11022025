@@ -251,8 +251,8 @@ onMounted(() => {
               :disabled="isLoading"
               class="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white 
                      rounded-lg font-medium hover:from-blue-500 hover:to-blue-400 
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                     focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed
+                     focus:outline-none focus:ring-2 focus:ring-offset-2 
+                     focus:ring-blue-500 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed
                      transition-all duration-300"
             >
               <span v-if="isLoading">
@@ -277,21 +277,11 @@ onMounted(() => {
         </form>
 
         <!-- Explorer Mode -->
-        <div class="mt-8 pt-6 border-t border-gray-700/50">
-          <h3 class="text-lg font-medium text-white mb-4">
-            Try Explorer Mode
-          </h3>
-          <p class="text-gray-400 text-sm mb-4">
-            Get instant access to CSMCL features for 10 days.
-          </p>
+        <div class="mt-6">
           <button
+            type="button"
             @click="handleExplorerLogin"
-            class="w-full px-6 py-3 bg-gradient-to-r from-blue-600/20 to-blue-500/20 
-                   text-blue-400 rounded-lg font-medium border border-blue-500/30
-                   hover:from-blue-600/30 hover:to-blue-500/30 
-                   focus:outline-none focus:ring-2 focus:ring-blue-500/50 
-                   focus:ring-offset-2 focus:ring-offset-gray-800
-                   transition-all duration-300"
+            class="w-full flex justify-center py-3 px-4 border border-blue-500/30 rounded-lg shadow-sm text-sm font-medium text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
             Start Exploring
           </button>

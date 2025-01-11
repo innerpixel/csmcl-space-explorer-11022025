@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, debounce } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import CryptoJS from 'crypto-js'
@@ -14,6 +14,39 @@ const form = ref({
   challengeResponse: '',
   agreeToTerms: false
 })
+
+const formState = ref({
+  isLoading: false,
+  isSaving: false,
+  hasChanges: false,
+  lastSaved: null
+})
+
+const originalForm = ref(null)
+
+const hasUnsavedChanges = computed(() => {
+  if (!originalForm.value) return false
+  return JSON.stringify(form.value) !== JSON.stringify(originalForm.value)
+})
+
+watch(form, () => {
+  formState.value.hasChanges = hasUnsavedChanges.value
+}, { deep: true })
+
+watch(() => userStore.user, (newUser) => {
+  if (newUser) {
+    const newForm = {
+      displayName: newUser.displayName || '',
+      cosmicalEmail: newUser.email ? newUser.email.split('@')[0] : '',
+      recoveryPhrase: '', // Don't populate for security
+      challengeResponse: '',
+      agreeToTerms: true
+    }
+    form.value = newForm
+    originalForm.value = { ...newForm }
+    formState.value.hasChanges = false
+  }
+}, { immediate: true })
 
 const errors = ref({
   displayName: '',
@@ -98,123 +131,127 @@ const validateForm = () => {
     agreeToTerms: ''
   }
 
-  // Validate display name
+  // Display name validation
   if (!form.value.displayName) {
     errors.value.displayName = 'Display name is required'
     isValid = false
-  } else {
-    const words = form.value.displayName.trim().split(/\s+/)
-    if (words.length < 1 || words.length > 3) {
-      errors.value.displayName = 'Please enter between 1 and 3 words'
-      isValid = false
-    } else if (words.some(word => !validateWord(word))) {
-      errors.value.displayName = 'Each word must be at least 3 letters and contain only letters'
-      isValid = false
-    }
+  } else if (form.value.displayName.length < 2) {
+    errors.value.displayName = 'Display name must be at least 2 characters'
+    isValid = false
   }
 
-  // Validate cosmical email
+  // Email validation
   if (!form.value.cosmicalEmail) {
     errors.value.cosmicalEmail = 'Email is required'
     isValid = false
-  } else {
-    const emailPrefix = form.value.cosmicalEmail.split('@')[0]
-    if (!/^[a-z0-9.]+$/.test(emailPrefix)) {
-      errors.value.cosmicalEmail = 'Email can only contain lowercase letters, numbers, and dots'
-      isValid = false
-    } else if (emailPrefix.length < 3) {
-      errors.value.cosmicalEmail = 'Email must be at least 3 characters before @csmcl.space'
-      isValid = false
-    }
-  }
-
-  // Validate recovery phrase
-  if (!form.value.recoveryPhrase) {
-    errors.value.recoveryPhrase = 'Recovery phrase is required'
-    isValid = false
-  } else if (!validatePhrase(form.value.recoveryPhrase)) {
-    errors.value.recoveryPhrase = 'Phrase must contain at least 2 words, each with 3+ letters'
+  } else if (!/^[a-zA-Z0-9_-]+$/.test(form.value.cosmicalEmail)) {
+    errors.value.cosmicalEmail = 'Email can only contain letters, numbers, underscores, and hyphens'
     isValid = false
   }
 
-  // Validate challenge response
+  // Recovery phrase validation if provided
+  if (form.value.recoveryPhrase && !validatePhrase(form.value.recoveryPhrase)) {
+    errors.value.recoveryPhrase = 'Invalid recovery phrase format'
+    isValid = false
+  }
+
+  // Challenge response validation
   if (!form.value.challengeResponse) {
-    errors.value.challengeResponse = 'Please enter the challenge code'
+    errors.value.challengeResponse = 'Please complete the challenge'
     isValid = false
   } else if (form.value.challengeResponse !== challenge.value) {
-    errors.value.challengeResponse = 'Invalid challenge code'
-    isValid = false
-  }
-
-  // Validate terms agreement
-  if (!form.value.agreeToTerms) {
-    errors.value.agreeToTerms = 'You must agree to the terms and conditions'
+    errors.value.challengeResponse = 'Incorrect challenge response'
     isValid = false
   }
 
   return isValid
 }
 
+const autoSave = debounce(async () => {
+  if (!hasUnsavedChanges.value) return
+  
+  try {
+    formState.value.isSaving = true
+    await userStore.updateUserProfile({
+      displayName: form.value.displayName,
+      email: `${form.value.cosmicalEmail}@csmcl.space`
+    })
+    formState.value.lastSaved = new Date()
+    originalForm.value = { ...form.value }
+  } catch (error) {
+    console.error('Auto-save failed:', error)
+  } finally {
+    formState.value.isSaving = false
+  }
+}, 2000)
+
+watch([() => form.value.displayName, () => form.value.cosmicalEmail], autoSave)
+
 const handleSubmit = async () => {
   if (checkBlockStatus()) return
   if (!validateForm()) return
 
-  isLoading.value = true
+  formState.value.isLoading = true
   serverError.value = ''
 
   try {
-    const randomDelay = Math.floor(Math.random() * 1000) + 500
-    await new Promise(resolve => setTimeout(resolve, randomDelay))
+    // Save any pending changes
+    if (hasUnsavedChanges.value) {
+      await userStore.updateUserProfile({
+        displayName: form.value.displayName,
+        email: `${form.value.cosmicalEmail}@csmcl.space`
+      })
+    }
 
-    const hashedPhrase = hashPhrase(form.value.recoveryPhrase, form.value.cosmicalEmail)
-    
-    await userStore.register({
-      displayName: form.value.displayName,
-      cosmicalEmail: form.value.cosmicalEmail.toLowerCase() + '@csmcl.space',
-      recoveryPhrase: hashedPhrase
-    })
-    
+    // Move to next step
     router.push('/onboarding/verify')
   } catch (error) {
-    console.error('Registration failed:', error)
-    
-    // Clear any previous errors
-    errors.value = {
-      displayName: '',
-      cosmicalEmail: '',
-      recoveryPhrase: '',
-      challengeResponse: '',
-      agreeToTerms: ''
-    }
-
-    // Handle specific error cases
-    if (error.message.includes('name')) {
-      errors.value.displayName = 'Invalid display name. Please use 1-3 words with at least 3 letters each.'
-    } else if (error.message.includes('email')) {
-      errors.value.cosmicalEmail = 'This email is already taken or invalid. Please choose another.'
-    } else if (error.message.includes('phrase')) {
-      errors.value.recoveryPhrase = 'Invalid recovery phrase. Please ensure each word has at least 3 letters.'
-    } else if (error.message.includes('network')) {
-      serverError.value = 'Network error. Please check your connection and try again.'
-    } else if (error.message.includes('timeout')) {
-      serverError.value = 'Request timed out. Please try again.'
-    } else {
-      serverError.value = 'Registration failed. Please try again or contact support if the issue persists.'
-      handleFailedAttempt()
-    }
-
-    // Generate new challenge if security-related error
-    if (error.message.includes('security') || error.message.includes('invalid')) {
-      challenge.value = generateChallenge()
-    }
+    console.error('Submission failed:', error)
+    handleFailedAttempt()
   } finally {
-    isLoading.value = false
+    formState.value.isLoading = false
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   challenge.value = generateChallenge()
   resetBlock()
+  
+  // Load saved form data from localStorage
+  const savedForm = localStorage.getItem('onboarding_identity_form')
+  if (savedForm) {
+    try {
+      const parsed = JSON.parse(savedForm)
+      form.value = {
+        ...form.value,
+        ...parsed
+      }
+    } catch (error) {
+      console.error('Failed to load saved form:', error)
+    }
+  }
+  
+  // If user exists in store, populate form
+  if (userStore.user) {
+    const newForm = {
+      displayName: userStore.user.displayName || '',
+      cosmicalEmail: userStore.user.email ? userStore.user.email.split('@')[0] : '',
+      recoveryPhrase: '', // Don't populate for security
+      challengeResponse: '',
+      agreeToTerms: true
+    }
+    form.value = newForm
+    originalForm.value = { ...newForm }
+  }
+})
+
+onBeforeUnmount(() => {
+  const formData = {
+    displayName: form.value.displayName,
+    cosmicalEmail: form.value.cosmicalEmail,
+    agreeToTerms: form.value.agreeToTerms
+  }
+  localStorage.setItem('onboarding_identity_form', JSON.stringify(formData))
 })
 
 defineExpose({

@@ -1,13 +1,30 @@
 <script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '../stores/user'
 import IdentityForm from '../components/registration/IdentityForm.vue'
 import VerificationForm from '../components/registration/VerificationForm.vue'
 import SpaceSetup from '../components/space-setup/SpaceSetup.vue'
 
 const route = useRoute()
+const router = useRouter()
+const userStore = useUserStore()
 
+const isLoading = ref(false)
 const currentStep = computed(() => route.name || 'identity')
+
+// Load saved progress
+const savedProgress = ref(null)
+onMounted(() => {
+  const progress = localStorage.getItem('onboarding_progress')
+  if (progress) {
+    try {
+      savedProgress.value = JSON.parse(progress)
+    } catch (error) {
+      console.error('Failed to load progress:', error)
+    }
+  }
+})
 
 const steps = [
   { id: 'identity', name: 'Identity', icon: '👤' },
@@ -16,31 +33,71 @@ const steps = [
 ]
 
 const stepInfo = computed(() => {
-  switch (currentStep.value) {
-    case 'verify':
-      return {
-        title: 'Verify Your Email',
-        subtitle: 'Enter the verification code we sent to your email',
-        component: VerificationForm
-      }
-    case 'space':
-      return {
-        title: 'Set Up Your Space',
-        subtitle: 'Choose your space type and size to get started',
-        component: SpaceSetup
-      }
-    default:
-      return {
-        title: 'Create Your Identity',
-        subtitle: 'Join the decentralized future. Create your unique identity to start using CSMCL.',
-        component: IdentityForm
-      }
+  const baseInfo = {
+    verify: {
+      title: 'Verify Your Email',
+      subtitle: 'Enter the verification code we sent to your email',
+      component: VerificationForm
+    },
+    space: {
+      title: 'Set Up Your Space',
+      subtitle: 'Choose your space type and size to get started',
+      component: SpaceSetup
+    },
+    identity: {
+      title: 'Complete Your Identity',
+      subtitle: userStore.user 
+        ? 'Review and confirm your identity details' 
+        : 'Join the decentralized future. Create your unique identity to start using CSMCL.',
+      component: IdentityForm
+    }
   }
+
+  return baseInfo[currentStep.value] || baseInfo.identity
 })
 
 const currentStepIndex = computed(() => 
   steps.findIndex(step => step.id === currentStep.value)
 )
+
+const progress = computed(() => {
+  if (!userStore.user?.verificationDetails?.progress) return null
+  
+  return {
+    current: userStore.user.verificationDetails.progress.current,
+    completed: userStore.user.verificationDetails.progress.completed || [],
+    next: userStore.user.verificationDetails.progress.next
+  }
+})
+
+// Watch for step changes and validate
+watch(() => route.name, async (newStep) => {
+  if (!userStore.user && newStep !== 'identity') {
+    router.push('/onboarding')
+    return
+  }
+
+  if (progress.value) {
+    const stepIndex = steps.findIndex(s => s.id === newStep)
+    const completedSteps = progress.value.completed
+    
+    // Can't skip to future steps
+    if (stepIndex > 0 && !completedSteps.includes(steps[stepIndex - 1].id)) {
+      router.push(`/onboarding/${progress.value.current}`)
+    }
+  }
+}, { immediate: true })
+
+// Auto-save progress
+watch(() => currentStep.value, (step) => {
+  if (userStore.user) {
+    localStorage.setItem('onboarding_progress', JSON.stringify({
+      step,
+      completed: progress.value?.completed || [],
+      timestamp: new Date().toISOString()
+    }))
+  }
+})
 </script>
 
 <template>

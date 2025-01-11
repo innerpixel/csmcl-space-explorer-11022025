@@ -3,8 +3,12 @@
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
       <header class="mb-8">
-        <h1 class="text-3xl font-bold text-white mb-2">User Management</h1>
-        <p class="text-gray-400">Manage users and switch between profiles</p>
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-bold text-white mb-2">User Management</h1>
+            <p class="text-gray-400">Manage users and switch between profiles</p>
+          </div>
+        </div>
       </header>
 
       <!-- Controls -->
@@ -64,6 +68,17 @@
 
       <!-- User List -->
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <router-link
+          to="/admin/users/new"
+          class="bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border-2 border-dashed border-gray-700/50 hover:border-purple-500/50 transition-colors group flex flex-col items-center justify-center py-6"
+        >
+          <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:bg-purple-500/30 transition-colors">
+            <span class="text-2xl">➕</span>
+          </div>
+          <h3 class="text-lg font-medium text-purple-400 mt-4">Add New User</h3>
+          <p class="text-sm text-gray-400 mt-1">Create a new user account</p>
+        </router-link>
+
         <div
           v-for="user in filteredUsers"
           :key="user.cosmicalName"
@@ -140,6 +155,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { userDb } from '../services/userDb'
 import { 
@@ -147,13 +163,12 @@ import {
   canEditUser, 
   canSwitchToProfile 
 } from '../utils/roles'
-import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const userStore = useUserStore()
 const searchQuery = ref('')
 const selectedRole = ref('all')
 const sortBy = ref('displayName')
-const router = useRouter()
 
 // Get all users
 const users = computed(() => {

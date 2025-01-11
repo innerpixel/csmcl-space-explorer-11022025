@@ -15,25 +15,39 @@
                 'mt-1 w-full px-4 py-2 bg-gray-800/50 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2',
                 errors.displayName ? 'border-red-500/50 focus:ring-red-500/50' : 'border-gray-700/50 focus:ring-blue-500/50'
               ]"
+              placeholder="Enter display name"
             />
             <p v-if="errors.displayName" class="mt-1 text-sm text-red-400">{{ errors.displayName }}</p>
           </div>
 
-          <!-- Role -->
+          <!-- Email -->
           <div>
-            <label class="block text-sm font-medium text-gray-300">Role</label>
-            <select
-              v-model="formData.role"
+            <label class="block text-sm font-medium text-gray-300">Email</label>
+            <input
+              v-model="formData.email"
+              type="email"
               :class="[
-                'mt-1 w-full px-4 py-2 bg-gray-800/50 border rounded-lg text-white focus:outline-none focus:ring-2',
-                errors.role ? 'border-red-500/50 focus:ring-red-500/50' : 'border-gray-700/50 focus:ring-blue-500/50'
+                'mt-1 w-full px-4 py-2 bg-gray-800/50 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2',
+                errors.email ? 'border-red-500/50 focus:ring-red-500/50' : 'border-gray-700/50 focus:ring-blue-500/50'
               ]"
-            >
-              <option v-for="role in availableRoles" :key="role" :value="role">
-                {{ role.charAt(0).toUpperCase() + role.slice(1) }}
-              </option>
-            </select>
-            <p v-if="errors.role" class="mt-1 text-sm text-red-400">{{ errors.role }}</p>
+              placeholder="Enter email address"
+            />
+            <p v-if="errors.email" class="mt-1 text-sm text-red-400">{{ errors.email }}</p>
+          </div>
+
+          <!-- Cosmical Name -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300">Cosmical Name</label>
+            <input
+              v-model="formData.cosmicalName"
+              type="text"
+              :class="[
+                'mt-1 w-full px-4 py-2 bg-gray-800/50 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2',
+                errors.cosmicalName ? 'border-red-500/50 focus:ring-red-500/50' : 'border-gray-700/50 focus:ring-blue-500/50'
+              ]"
+              placeholder="Enter Cosmical name"
+            />
+            <p v-if="errors.cosmicalName" class="mt-1 text-sm text-red-400">{{ errors.cosmicalName }}</p>
           </div>
 
           <!-- Buttons -->
@@ -96,7 +110,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { userDb } from '../../services/userDb'
-import { ROLES, canManageRole } from '../../utils/roles'
 import Notification from '../shared/Notification.vue'
 
 const router = useRouter()
@@ -105,7 +118,9 @@ const userStore = useUserStore()
 
 const formData = ref({
   displayName: '',
-  role: 'user'
+  email: '',
+  cosmicalName: '',
+  role: 'user' // Default role is always 'user'
 })
 
 const errors = ref({})
@@ -126,12 +141,6 @@ const notification = ref({
 
 const isNewUser = computed(() => !route.params.id)
 
-const availableRoles = computed(() => {
-  return Object.values(ROLES).filter(role => 
-    canManageRole(userStore.user?.role, role)
-  )
-})
-
 onMounted(async () => {
   if (!isNewUser.value) {
     const userId = route.params.id
@@ -139,7 +148,9 @@ onMounted(async () => {
     if (user) {
       formData.value = {
         displayName: user.displayName,
-        role: user.role || 'user'
+        email: user.email,
+        cosmicalName: user.cosmicalName,
+        role: 'user' // Keep role as 'user' even when editing
       }
     }
   }
@@ -148,19 +159,39 @@ onMounted(async () => {
 const validateForm = () => {
   errors.value = {}
   
+  // Display name validation
   if (!formData.value.displayName?.trim()) {
     errors.value.displayName = 'Display name is required'
   } else if (formData.value.displayName.length < 3) {
     errors.value.displayName = 'Display name must be at least 3 characters'
   }
   
-  if (!formData.value.role) {
-    errors.value.role = 'Role is required'
-  } else if (!availableRoles.value.includes(formData.value.role)) {
-    errors.value.role = 'Invalid role selected'
+  // Email validation
+  if (!formData.value.email?.trim()) {
+    errors.value.email = 'Email is required'
+  } else if (!isValidEmail(formData.value.email)) {
+    errors.value.email = 'Please enter a valid email address'
+  }
+  
+  // Cosmical name validation
+  if (!formData.value.cosmicalName?.trim()) {
+    errors.value.cosmicalName = 'Cosmical name is required'
+  } else if (formData.value.cosmicalName.length < 3) {
+    errors.value.cosmicalName = 'Cosmical name must be at least 3 characters'
+  } else if (isNewUser.value && userExists(formData.value.cosmicalName)) {
+    errors.value.cosmicalName = 'This Cosmical name is already taken'
   }
   
   return Object.keys(errors.value).length === 0
+}
+
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+const userExists = (cosmicalName) => {
+  return userDb.getLocalUsers().some(u => u.cosmicalName.toLowerCase() === cosmicalName.toLowerCase())
 }
 
 const validateAndSave = async () => {
@@ -173,7 +204,8 @@ const validateAndSave = async () => {
     notification.value = {
       show: true,
       type: 'success',
-      title: isNewUser.value ? 'User created successfully' : 'User updated successfully'
+      title: isNewUser.value ? 'User created successfully' : 'User updated successfully',
+      message: isNewUser.value ? 'New user has been created with basic access' : 'User details have been updated'
     }
     
     router.push({ name: 'admin-users' })
@@ -190,25 +222,27 @@ const validateAndSave = async () => {
 }
 
 const saveUser = async () => {
+  const userData = {
+    ...formData.value,
+    role: 'user', // Ensure role is always 'user'
+    verified: false
+  }
+  
   if (isNewUser.value) {
-    await userDb.createUser(formData.value)
+    await userDb.createUser(userData)
   } else {
     const userId = route.params.id
-    await userDb.updateUser(userId, formData.value)
+    await userDb.updateUser(userId, userData)
   }
 }
 
 const confirmCancel = () => {
-  if (formData.value.displayName || formData.value.role !== 'user') {
-    confirmDialog.value = {
-      title: 'Discard Changes?',
-      message: 'Are you sure you want to discard your changes?',
-      action: () => router.push({ name: 'admin-users' })
-    }
-    showConfirmDialog.value = true
-  } else {
-    router.push({ name: 'admin-users' })
+  confirmDialog.value = {
+    title: 'Discard Changes?',
+    message: 'Are you sure you want to discard your changes? This action cannot be undone.',
+    action: () => router.push({ name: 'admin-users' })
   }
+  showConfirmDialog.value = true
 }
 
 const handleConfirm = () => {

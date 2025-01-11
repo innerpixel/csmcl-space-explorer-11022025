@@ -1,8 +1,8 @@
 # CSMCL.Space Onboarding
 
-A modern Vue.js application for CSMCL.Space user onboarding and identity management. This application provides a seamless experience for users to create and manage their CSMCL identity, verify their account, set up their space, and connect their wallet. 
+A modern Vue.js Progressive Web Application (PWA) for CSMCL.Space user onboarding and identity management. This application provides a seamless experience for users to create and manage their CSMCL identity, verify their account, set up their space, and connect their wallet.
 
->> HAVELY UNDER DEVELOPMENT PLS. KEEP IN MIND CAN CHANG ANY MINUTE!! 
+>> HEAVILY UNDER DEVELOPMENT - PLEASE KEEP IN MIND CAN CHANGE ANY MINUTE!!
 
 ## Security
 
@@ -196,169 +196,14 @@ const securityHeaders = {
 }
 ```
 
-### Security Best Practices
-1. **Development**
-   - Secure coding guidelines
-   - Regular security training
-   - Code review process
-   - Security testing
-   - Dependency scanning
-
-2. **Deployment**
-   - Secure configuration
-   - Environment isolation
-   - Access control
-   - Monitoring setup
-   - Backup procedures
-
-3. **Maintenance**
-   - Regular updates
-   - Security patching
-   - Performance monitoring
-   - System hardening
-   - Configuration review
-
-4. **User Education**
-   - Security guidelines
-   - Best practices
-   - Feature documentation
-   - Support resources
-   - Security awareness
-
-## User Types and Roles
-
-CSMCL.Space supports three distinct user types, each with specific permissions and capabilities:
-
-### 1. Regular Users
-- **Role**: `USER`
-- **Description**: Standard users with full access to personal space management
-- **Permissions**:
-  - View personal metrics and analytics
-  - Manage personal space and profile
-  - Access standard features
-  - Complete full onboarding process
-- **Account Type**: Permanent
-- **Features**:
-  - Full identity management
-  - Space customization
-  - Network interactions
-  - Transaction capabilities
-  - Social engagement
-
-### 2. Explorer Users
-- **Role**: `EXPLORER`
-- **Description**: Temporary users with limited access for platform exploration
-- **Permissions**:
-  - View metrics
-  - Limited space management
-  - Basic feature access
-- **Account Type**: Temporary (10-day expiration)
-- **Special Characteristics**:
-  - Uses cosmic-explorer theme
-  - Temporary space allocation
-  - Limited feature set
-  - Session expiry tracking
-  - No permanent data storage
-- **Default Configuration**:
-  - Username: CSMCL.Explorer
-  - Theme: cosmic-explorer
-  - Template: explorer
-
-### 3. Admin Users
-- **Role**: `ADMIN`
-- **Description**: System administrators with full platform access
-- **Permissions**:
-  - Manage users
-  - Manage spaces
-  - Access admin panel
-  - Modify system settings
-  - View all metrics
-  - Manage compliance
-  - Override settings
-  - Access audit logs
-- **Account Type**: Permanent
-- **Special Access**:
-  - System configuration
-  - User management
-  - Security controls
-  - Analytics dashboard
-  - Compliance tools
-- **Default Admin Account**:
-  - Username: INNERPIXEL
-  - Display Name: InnerPixel
-  - Email: innerpixel@csmcl.space
-  - Theme: admin-dark
-  - Template: admin
-
-### Role Implementation
-
-```javascript
-// Role-based permissions structure
-const PERMISSIONS = {
-  USER: {
-    canViewMetrics: true,
-    canManagePersonalSpace: true,
-    canAccessStandardFeatures: true
-  },
-  EXPLORER: {
-    canViewMetrics: true,
-    canAccessBasicFeatures: true,
-    isTemporary: true,
-    expirationDays: 10
-  },
-  ADMIN: {
-    canManageUsers: true,
-    canManageSpaces: true,
-    canAccessAdmin: true,
-    canModifySystem: true,
-    canViewMetrics: true,
-    canManageCompliance: true,
-    canOverrideSettings: true,
-    canAccessAuditLogs: true
-  }
-}
-```
-
-### User Type Transitions
-
-1. **Explorer to Regular User**:
-   - Complete identity verification
-   - Set up permanent credentials
-   - Transfer relevant data
-   - Gain full feature access
-
-2. **Regular User to Admin**:
-   - Requires system administrator approval
-   - Additional security verification
-   - Role permission upgrade
-   - Admin training completion
-
-3. **Permission Inheritance**:
-   - Admins inherit all regular user permissions
-   - Regular users inherit all explorer permissions
-   - Each role adds specific capabilities
-
-### Security Considerations
-
-1. **Role-Based Access Control**:
-   - Strict permission enforcement
-   - Regular permission audits
-   - Least privilege principle
-   - Dynamic permission validation
-
-2. **Session Management**:
-   - Role-specific session handling
-   - Automatic explorer expiration
-   - Secure role transitions
-   - Session integrity checks
-
-3. **Audit Trail**:
-   - Role change logging
-   - Permission modification tracking
-   - Access attempt recording
-   - Security event monitoring
-
 ## Features
+
+### Progressive Web App (PWA)
+- 📱 **Cross-Platform Installation**: Install on any device (iOS, Android, Desktop)
+- 🚀 **Offline Support**: Basic functionality works without internet
+- 🔄 **Auto Updates**: Seamless application updates
+- 🎨 **Adaptive Icons**: Platform-specific icons with maskable support
+- 📸 **Rich Installation Experience**: Custom screenshots and descriptions
 
 ### User Authentication
 - Secure login system with rate limiting and challenge verification

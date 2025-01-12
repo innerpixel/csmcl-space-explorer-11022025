@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { userDb } from '../services/userDb'
 import CryptoJS from 'crypto-js'
+import { wordlist } from '@scure/bip39/wordlists/english'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -87,7 +88,7 @@ const usePhraseSuggestion = () => {
 
 const updatePhraseStrength = () => {
   // For BIP39 phrases, strength is binary - either valid or invalid
-  const isValid = userDb.validatePhrase(form.value.phrase)
+  const isValid = validatePhrase(form.value.phrase)
   phraseStrength.value = isValid ? 100 : 0
 }
 
@@ -119,17 +120,20 @@ const resetBlock = () => {
 const handleFailedAttempt = () => {}
 
 const validateWord = (word) => {
-  return word.length >= 3 && /^[a-zA-Z]+$/.test(word)
+  if (!word) return false
+  return wordlist.includes(word.toLowerCase().trim())
 }
 
 const validatePhrase = (phrase) => {
-  const words = phrase.trim().split(/\s+/)
-  return words.length >= 3 && words.every(validateWord)
+  if (!phrase) return false
+  return userDb.validateFlowPhrase(phrase.trim())
 }
 
 const hashPhrase = (phrase, salt) => {
-  const combinedPhrase = `${phrase}${salt}${form.value.challengeResponse}`
-  return CryptoJS.SHA3(combinedPhrase).toString()
+  if (!phrase) return ''
+  // Get Flow-compatible seed for proof of ownership
+  const seed = userDb.getFlowSeed(phrase.trim())
+  return CryptoJS.SHA3(seed + salt).toString()
 }
 
 const handleSubmit = async () => {
@@ -142,7 +146,11 @@ const handleSubmit = async () => {
     return
   }
 
-  if (!form.value.phrase) {
+  // Skip phrase validation for admin/explorer
+  const isAdminOrExplorer = form.value.cosmicalName.toUpperCase() === 'CSMCL ADMIN' || 
+                           form.value.cosmicalName.toUpperCase() === 'CSMCL EXPLORER'
+  
+  if (!isAdminOrExplorer && !form.value.phrase) {
     errors.value.phrase = 'Please enter your recovery phrase'
     return
   }
@@ -150,10 +158,11 @@ const handleSubmit = async () => {
   isLoading.value = true
 
   try {
-    // Login
+    // Login with skipPhraseValidation for admin/explorer
     const success = await userStore.login({
       cosmicalName: form.value.cosmicalName,
-      phrase: form.value.phrase
+      phrase: form.value.phrase,
+      skipPhraseValidation: isAdminOrExplorer
     })
 
     if (success) {

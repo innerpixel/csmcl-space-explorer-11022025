@@ -2,12 +2,10 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
     <div class="space-y-8">
       <!-- Welcome Section -->
-      <div class="text-center">
-        <h1 class="text-3xl font-bold text-white">
-          Welcome back, {{ userStore.displayName }}
-        </h1>
-        <p class="mt-2 text-gray-400">Manage your space and explore the CSMCL network</p>
-      </div>
+      <welcome-section
+        :title="`Welcome back, ${userStore.displayName}`"
+        subtitle="Manage your space and explore the CSMCL network"
+      />
 
       <!-- Quick Actions -->
       <stats-grid>
@@ -31,32 +29,32 @@
       </stats-grid>
 
       <!-- Space Stats -->
-      <stats-grid>
-        <stat-card
-          v-for="stat in spaceStats"
-          :key="stat.label"
-          :label="stat.label"
-          :value="stats.stats[stat.key]"
-          :icon="stat.icon"
-          :description="stat.description"
-          :loading="stats.loading"
-          :error="stats.error"
-        />
-      </stats-grid>
+      <stats-section
+        :stats="spaceStats"
+        :stat-values="stats.stats"
+        :loading="stats.loading"
+        :error="stats.error"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useUserStore } from '../stores/user'
 import { useStats } from '../composables/useStats'
 import StatsGrid from '../components/dashboard/StatsGrid.vue'
 import DashboardCard from '../components/dashboard/DashboardCard.vue'
-import StatCard from '../components/dashboard/StatCard.vue'
+import StatsSection from '../components/dashboard/StatsSection.vue'
+import WelcomeSection from '../components/dashboard/WelcomeSection.vue'
 
 const userStore = useUserStore()
 const stats = useStats('user')
+
+// Prefetch stats when component is mounted
+onMounted(() => {
+  stats.prefetchStats()
+})
 
 const quickActions = computed(() => [
   {

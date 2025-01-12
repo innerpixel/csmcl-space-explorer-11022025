@@ -2,12 +2,11 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
     <div class="space-y-8">
       <!-- Welcome Section -->
-      <div class="text-center">
-        <h1 class="text-3xl font-bold text-purple-400">
-          InnerPixel Admin Dashboard
-        </h1>
-        <p class="mt-2 text-gray-400">Monitor and manage the CSMCL network</p>
-      </div>
+      <welcome-section
+        title="Admin Dashboard"
+        subtitle="Monitor system health and manage users"
+        variant="admin"
+      />
 
       <!-- Quick Actions -->
       <stats-grid>
@@ -32,84 +31,52 @@
       </stats-grid>
 
       <!-- System Stats -->
-      <stats-grid>
-        <stat-card
-          v-for="stat in systemStats"
-          :key="stat.label"
-          :label="stat.label"
-          :value="stats.stats[stat.key]"
-          :icon="stat.icon"
-          :description="stat.description"
-          :loading="stats.loading"
-          :error="stats.error"
-          variant="admin"
-        />
-      </stats-grid>
+      <stats-section
+        :stats="systemStats"
+        :stat-values="stats.stats"
+        :loading="stats.loading"
+        :error="stats.error"
+        variant="admin"
+      />
 
       <!-- Recent Activity -->
-      <dashboard-card variant="admin">
-        <template #title>
-          <h2 class="text-xl font-semibold text-white mb-4">Recent Activity</h2>
-        </template>
-        
-        <div v-if="activity.loading" class="flex justify-center py-8">
-          <loading-spinner />
-        </div>
-        
-        <div v-else-if="activity.error" class="text-red-400 p-4">
-          {{ activity.error }}
-        </div>
-        
-        <div v-else class="space-y-4">
-          <div
-            v-for="(item, index) in activity.activities"
-            :key="index"
-            class="flex items-start space-x-4 p-4 rounded-lg hover:bg-gray-700/20 transition-colors"
-          >
-            <div class="text-2xl">{{ item.icon }}</div>
-            <div class="flex-1">
-              <p class="text-white">{{ item.description }}</p>
-              <p class="text-sm text-gray-500 mt-1">{{ item.time }}</p>
-            </div>
-            <div class="text-xs px-2 py-1 rounded-full" :class="[
-              item.type === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
-              item.type === 'error' ? 'bg-red-500/20 text-red-400' :
-              'bg-green-500/20 text-green-400'
-            ]">
-              {{ item.status }}
-            </div>
-          </div>
-        </div>
-      </dashboard-card>
+      <div class="bg-gray-800/50 rounded-lg p-6">
+        <h2 class="text-xl font-semibold text-white mb-4">Recent Activity</h2>
+        <activity-feed :activities="activity.activities" :loading="activity.loading" />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useUserStore } from '../stores/user'
+import { computed, onMounted } from 'vue'
 import { useStats } from '../composables/useStats'
 import { useActivity } from '../composables/useActivity'
 import StatsGrid from '../components/dashboard/StatsGrid.vue'
 import DashboardCard from '../components/dashboard/DashboardCard.vue'
-import StatCard from '../components/dashboard/StatCard.vue'
-import LoadingSpinner from '../components/shared/LoadingSpinner.vue'
+import StatsSection from '../components/dashboard/StatsSection.vue'
+import WelcomeSection from '../components/dashboard/WelcomeSection.vue'
+import ActivityFeed from '../components/dashboard/ActivityFeed.vue'
 
-const userStore = useUserStore()
 const stats = useStats('admin')
 const activity = useActivity()
+
+// Prefetch stats when component is mounted
+onMounted(() => {
+  stats.prefetchStats()
+})
 
 const quickActions = computed(() => [
   {
     title: 'System Metrics',
-    description: 'Monitor system performance and health',
+    description: 'View detailed system performance metrics',
     icon: '📊',
     link: '/admin/metrics',
     buttonText: 'View Metrics'
   },
   {
     title: 'User Management',
-    description: 'Manage users and permissions',
+    description: 'Manage user accounts and permissions',
     icon: '👥',
     link: '/admin/users',
     buttonText: 'Manage Users'
@@ -123,10 +90,10 @@ const quickActions = computed(() => [
   },
   {
     title: 'Network Control',
-    description: 'Monitor and manage network settings',
+    description: 'Monitor and manage network connections',
     icon: '🌐',
     link: '/admin/network',
-    buttonText: 'Network Settings'
+    buttonText: 'View Network'
   }
 ])
 
@@ -134,20 +101,20 @@ const systemStats = computed(() => [
   {
     label: 'System Health',
     key: 'systemHealth',
-    icon: '🏥',
-    description: 'Overall system performance metrics'
+    icon: '💪',
+    description: 'Overall system performance and stability'
   },
   {
     label: 'Active Users',
     key: 'activeUsers',
     icon: '👥',
-    description: 'Current user activity statistics'
+    description: 'Currently active and new users'
   },
   {
     label: 'Network Load',
     key: 'networkLoad',
-    icon: '🌐',
-    description: 'Network performance and load metrics'
+    icon: '📡',
+    description: 'Current network usage and capacity'
   }
 ])
 </script>

@@ -116,16 +116,31 @@ export const useUserStore = defineStore('user', {
       return false
     },
 
-    async login({ cosmicalName, phrase }) {
+    async login({ cosmicalName, phrase, skipPhraseValidation = false }) {
       try {
-        const user = userDb.getUser(cosmicalName, true) // Get user with decrypted phrase
+        const user = userDb.getUser(cosmicalName, true)
         if (!user) {
+          console.error('User not found:', cosmicalName)
           return false
         }
 
-        // Verify phrase if provided
-        if (phrase && user.phrase && phrase !== user.phrase) {
-          return false
+        // For admin and explorer, skip phrase validation if requested
+        if (user.role === 'admin' || user.role === 'explorer') {
+          skipPhraseValidation = skipPhraseValidation || true
+        }
+
+        // Verify phrase if validation not skipped
+        if (!skipPhraseValidation && phrase) {
+          if (!userDb.validateFlowPhrase(phrase)) {
+            console.error('Invalid Flow phrase format')
+            return false
+          }
+          
+          // For regular users, verify the phrase matches
+          if (user.phrase && phrase !== user.phrase) {
+            console.error('Phrase mismatch')
+            return false
+          }
         }
 
         // Set user data in store
@@ -135,7 +150,7 @@ export const useUserStore = defineStore('user', {
         this.cosmicalEmail = user.email
         this.isAdmin = user.role === 'admin'
         this.isExplorer = user.role === 'explorer'
-        this.isVerified = user.verified || false
+        this.isVerified = user.isVerified || false
         this.explorerExpiry = user.explorerExpiry || null
 
         return true
@@ -219,7 +234,12 @@ export const useUserStore = defineStore('user', {
         const expiry = new Date(now.getTime() + (10 * 24 * 60 * 60 * 1000)).toISOString()
         userDb.setExplorerExpiry(expiry)
 
-        const success = await this.login({ cosmicalName })
+        // Skip phrase validation for explorer login
+        const success = await this.login({ 
+          cosmicalName, 
+          skipPhraseValidation: true 
+        })
+
         if (!success) {
           // Clean up if login failed
           userDb.setExplorerExpiry(null)

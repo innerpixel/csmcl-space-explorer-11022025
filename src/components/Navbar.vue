@@ -41,7 +41,21 @@
 
                 <!-- Menu Items -->
                 <div class="py-1">
-                  <!-- Admin Dashboard -->
+                  <router-link
+                    to="/settings"
+                    custom
+                    v-slot="{ navigate }"
+                  >
+                    <button
+                      @click="navigateAndClose(navigate)"
+                      class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white
+                             hover:bg-gray-700/50 transition-colors flex items-center space-x-2"
+                    >
+                      <span class="icon">⚙️</span>
+                      <span>Settings</span>
+                    </button>
+                  </router-link>
+
                   <router-link
                     v-if="userStore.isAdmin"
                     to="/admin"

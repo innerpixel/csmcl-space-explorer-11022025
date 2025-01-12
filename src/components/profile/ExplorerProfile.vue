@@ -7,28 +7,40 @@
     <div class="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-xl p-6 backdrop-blur-sm border border-blue-500/20">
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-2xl font-bold text-white">{{ currentLevel }}</h2>
-          <p class="text-gray-400">Explorer Level</p>
+          <h2 class="text-2xl font-bold text-white">Explorer Mode</h2>
+          <p class="text-gray-400">Try out CSMCL Space features</p>
         </div>
         <div class="text-right">
-          <p class="text-xl font-semibold text-yellow-400">{{ totalXP }} XP</p>
-          <p v-if="nextLevel" class="text-sm text-gray-400">
-            {{ nextLevel.xpRequired - totalXP }} XP to {{ nextLevel.level }}
+          <p class="text-xl font-semibold text-yellow-400">
+            {{ getDaysLeft(userStore.preferences?.demoData?.lastVisited) }} days left
+          </p>
+          <p class="text-sm text-gray-400">
+            in trial period
           </p>
         </div>
       </div>
-      <div class="mt-4">
-        <div class="w-full bg-gray-700/30 rounded-full h-2">
-          <div class="bg-blue-500 h-2 rounded-full transition-all duration-500"
-               :style="{ width: `${levelProgress}%` }"></div>
+    </div>
+
+    <!-- Create Account Banner -->
+    <div class="bg-gradient-to-r from-green-600/20 to-blue-600/20 rounded-xl p-6 backdrop-blur-sm border border-green-500/20">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-white">Ready to Join?</h2>
+          <p class="text-gray-400 mt-1">Create your account to unlock all features</p>
         </div>
+        <button
+          @click="router.push('/login?mode=register')"
+          class="px-6 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-all duration-300"
+        >
+          Create Account
+        </button>
       </div>
     </div>
 
     <!-- Stats Grid -->
     <div>
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-white">Space Analytics</h2>
+        <h2 class="text-xl font-semibold text-white">Explorer Metrics</h2>
         <div class="text-sm text-gray-400">Last 24h</div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -60,55 +72,77 @@
       </div>
     </div>
 
-    <!-- Achievements Section -->
-    <div class="mt-8">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-white">Achievements & Progress</h2>
-      </div>
-      <AchievementsPanel />
-    </div>
-
     <!-- Explorer Features Progress -->
     <div class="mt-8">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-semibold text-white">Explorer Mode Features</h2>
       </div>
-      <OnboardingProgress 
-        class="bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6" 
-      />
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import ProfileHeader from './ProfileHeader.vue'
-import OnboardingProgress from './OnboardingProgress.vue'
-import AchievementsPanel from './AchievementsPanel.vue'
-import { useAchievements } from '../../composables/useAchievements'
 
+const router = useRouter()
 const userStore = useUserStore()
-const { totalXP, currentLevel, levelProgress, nextLevel } = useAchievements()
 
 const userStats = computed(() => [
   {
-    label: 'Activity',
-    icon: '📊',
-    value: userStore.spaceActivity,
-    description: 'Your space activity metrics'
+    label: 'Exploration',
+    icon: '🚀',
+    value: {
+      'Spaces Visited': userStore.preferences?.metrics?.find(m => m.name === 'Spaces Visited')?.value || 0,
+      'Features Tried': userStore.preferences?.metrics?.find(m => m.name === 'Features Discovered')?.value || 0,
+      'Time Spent': formatTimeSpent(userStore.preferences?.demoData?.lastVisited)
+    },
+    description: 'Your exploration progress'
   },
   {
-    label: 'Network',
-    icon: '🌐',
-    value: userStore.networkStats,
-    description: 'Your network connections'
+    label: 'Bot Interactions',
+    icon: '🤖',
+    value: {
+      'Bots Met': userStore.preferences?.metrics?.find(m => m.name === 'Bots Interacted')?.value || 0,
+      'Chats Started': userStore.preferences?.demoData?.interactions || 0,
+      'Favorites': userStore.preferences?.demoData?.favorites?.length || 0
+    },
+    description: 'Your interactions with demo bots'
   },
   {
-    label: 'Transactions',
-    icon: '💫',
-    value: userStore.transactionStats,
-    description: 'Your transaction history'
+    label: 'Trial Status',
+    icon: '⏳',
+    value: {
+      'Days Left': getDaysLeft(userStore.preferences?.demoData?.lastVisited),
+      'Mode': 'Explorer',
+      'Status': userStore.isExplorerExpired ? 'Expired' : 'Active'
+    },
+    description: 'Your explorer trial status'
   }
 ])
+
+// Format time spent in explorer mode
+function formatTimeSpent(startDate) {
+  if (!startDate) return '0 minutes'
+  const start = new Date(startDate)
+  const diff = Date.now() - start.getTime()
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`
+  }
+  return `${minutes} minutes`
+}
+
+// Calculate days left in trial
+function getDaysLeft(startDate) {
+  if (!startDate) return 10
+  const start = new Date(startDate)
+  const expiry = new Date(start)
+  expiry.setDate(expiry.getDate() + 10)
+  const daysLeft = Math.ceil((expiry - Date.now()) / (1000 * 60 * 60 * 24))
+  return Math.max(0, daysLeft)
+}
 </script>

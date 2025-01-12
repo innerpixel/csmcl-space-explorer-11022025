@@ -1,387 +1,160 @@
 import { defineStore } from 'pinia'
 import { userDb } from '../services/userDb'
-import { metricService } from '../services/achievements'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    user: null,
-    originalUser: null,  // Track original user when switching
-    isLoggedIn: false,
-    isAdmin: false,
-    isExplorer: false,
-    isVerified: false,
-    displayName: null,
-    cosmicalEmail: null,
-    explorerExpiry: null,
-    metrics: [], 
-    achievements: [], 
-    xp: 0,
-    level: 'novice',
-    gameState: {
-      currentLevel: 'novice',
-      xp: 0,
-      badges: []
-    },
-    verificationDetails: {
-      status: 'pending',
-      steps: {
-        email: false,
-        identity: false,
-        security: false
-      }
-    },
-    space: {
-      theme: 'default',
-      visibility: 'private',
-      features: []
-    },
-    wallet: {
-      balance: 0,
-      transactions: []
-    },
-    spaceMetrics: {
-      traffic: {
-        inbound: 0,
-        outbound: 0
-      },
-      connections: {
-        active: 0,
-        total: 0
-      },
-      requests: {
-        pending: 0,
-        completed: 0
-      }
-    },
-    stepProgress: {
-      verification: {
-        progress: 0,
-        completed: false
-      },
-      space: {
-        progress: 0,
-        completed: false
-      },
-      network: {
-        progress: 0,
-        completed: false
-      }
+    mode: 'explorer',        // 'explorer' | 'user' | 'admin'
+    user: null,             // Current user data
+    adminPrivileges: false, // Admin privileges flag
+    preferences: {
+      displayName: null,
+      email: null,
+      level: 'novice',
+      metrics: [],
+      achievements: []
     }
   }),
 
   getters: {
+    isLoggedIn: (state) => state.user !== null,
+    isAdmin: (state) => state.adminPrivileges,
+    isExplorer: (state) => state.mode === 'explorer',
+    currentLevel: (state) => state.preferences.level,
+    displayName: (state) => state.preferences.displayName || (state.user?.displayName || 'Explorer'),
+    explorerExpiry: (state) => state.preferences?.demoData?.lastVisited || null,
     isExplorerExpired: (state) => {
-      if (!state.explorerExpiry) return false
-      return new Date(state.explorerExpiry) < new Date()
-    },
-
-    verificationProgress: (state) => {
-      const steps = ['email', 'identity', 'security']
-      return {
-        completed: Object.values(state.verificationDetails.steps).filter(Boolean).length,
-        total: steps.length,
-        percent: (Object.values(state.verificationDetails.steps).filter(Boolean).length / steps.length) * 100
-      }
-    },
-
-    currentLevel: (state) => state.level,
-
-    totalXP: (state) => state.xp,
-
-    currentLevelDetails() {
-      return metricService.getLevelDetails(this.level)
-    },
-    
-    nextLevel() {
-      const levels = Object.keys(metricService.levels)
-      const currentIndex = levels.indexOf(this.level)
-      return currentIndex < levels.length - 1 ? levels[currentIndex + 1] : null
-    },
-
-    nextLevelProgress() {
-      if (!this.nextLevel) return 100
-      const currentLevel = metricService.levels[this.level]
-      const nextLevel = metricService.levels[this.nextLevel]
-      const progress = ((this.xp - currentLevel.minXP) / (nextLevel.minXP - currentLevel.minXP)) * 100
-      return Math.min(Math.max(progress, 0), 100)
+      if (!state.preferences?.demoData?.lastVisited) return false
+      const expiry = new Date(state.preferences.demoData.lastVisited)
+      expiry.setDate(expiry.getDate() + 10) // 10 days trial
+      return Date.now() > expiry.getTime()
     }
   },
 
   actions: {
-    checkAndHandleExplorerExpiry() {
-      if (this.isExplorerExpired && this.isExplorer) {
-        this.logout()
-        return true
+    // Start explorer mode
+    async startExplorer() {
+      try {
+        // Get demo bots from userDb
+        const demoBots = await userDb.getBotUsers()
+        
+        // Set up explorer state
+        this.mode = 'explorer'
+        this.user = {
+          email: 'explorer@csmcl.space',
+          id: 'explorer-demo',
+          displayName: '🚀 Explorer',
+          isDemo: true
+        }
+        this.adminPrivileges = false
+        this.preferences = {
+          displayName: '🚀 Explorer',
+          level: 'novice',
+          metrics: [
+            { name: 'Spaces Visited', value: 0 },
+            { name: 'Bots Interacted', value: 0 },
+            { name: 'Features Discovered', value: 0 }
+          ],
+          achievements: [],
+          demoBots: demoBots,
+          demoData: {
+            lastVisited: new Date().toISOString(),
+            interactions: 0,
+            favorites: []
+          }
+        }
+        
+        return { 
+          success: true,
+          message: 'Welcome to Explorer Mode! Feel free to look around and try things out.'
+        }
+      } catch (error) {
+        console.error('Failed to start explorer mode:', error)
+        return {
+          success: false,
+          error: 'Failed to start explorer mode'
+        }
       }
-      return false
     },
 
-    async login({ cosmicalName, phrase, skipPhraseValidation = false }) {
+    // Regular user login
+    async login(email, password) {
       try {
-        const user = userDb.getUser(cosmicalName, true)
-        if (!user) {
-          console.error('User not found:', cosmicalName)
-          return false
+        const result = await userDb.authenticateUser(email, password)
+        if (!result.success) {
+          throw new Error(result.error)
         }
 
-        // For admin and explorer, skip phrase validation if requested
-        if (user.role === 'admin' || user.role === 'explorer') {
-          skipPhraseValidation = skipPhraseValidation || true
+        this.mode = 'user'
+        this.user = result.user
+        this.preferences = result.user.preferences || {
+          displayName: result.user.email.split('@')[0],
+          email: result.user.email,
+          level: 'novice',
+          metrics: [],
+          achievements: []
         }
 
-        // Verify phrase if validation not skipped
-        if (!skipPhraseValidation && phrase) {
-          if (!userDb.validateFlowPhrase(phrase)) {
-            console.error('Invalid Flow phrase format')
-            return false
-          }
-          
-          // For regular users, verify the phrase matches
-          if (user.phrase && phrase !== user.phrase) {
-            console.error('Phrase mismatch')
-            return false
-          }
-        }
-
-        // Set user data in store
-        this.user = user
-        this.isLoggedIn = true
-        this.displayName = user.displayName || cosmicalName
-        this.cosmicalEmail = user.email
-        this.isAdmin = user.role === 'admin'
-        this.isExplorer = user.role === 'explorer'
-        this.isVerified = user.isVerified || false
-        this.explorerExpiry = user.explorerExpiry || null
-
-        return true
+        return { success: true }
       } catch (error) {
         console.error('Login error:', error)
-        return false
+        return {
+          success: false,
+          error: error.message || 'Login failed'
+        }
       }
     },
 
-    async register(userData) {
+    // Toggle admin privileges
+    async toggleAdmin(enable, secondFactor) {
       try {
-        // Create local user
-        const user = await userDb.createLocalUser({
-          cosmicalName: userData.cosmicalName,
-          displayName: userData.displayName,
-          email: userData.email,
-          password: userData.password,
-          phrase: userData.phrase
-        })
+        if (enable && !this.user) {
+          throw new Error('Must be logged in to enable admin privileges')
+        }
 
-        if (user) {
-          // Set initial state with progress tracking
-          this.user = {
-            ...user,
-            displayName: user.displayName,
-            email: user.email,
-            isVerified: false,
-            lastUpdated: new Date().toISOString(),
-            verificationDetails: {
-              status: 'pending',
-              steps: {
-                identity: true,
-                email: false,
-                security: false
-              },
-              progress: {
-                current: 'identity',
-                completed: ['registration'],
-                next: 'email'
-              }
-            }
+        if (enable) {
+          const result = await userDb.verifyAdminAccess(this.user.email, secondFactor)
+          if (!result.success) {
+            throw new Error(result.error)
           }
-          this.isLoggedIn = true
-
-          // Save progress to localStorage
-          localStorage.setItem('onboarding_progress', JSON.stringify({
-            step: 'identity',
-            completed: ['registration'],
-            timestamp: new Date().toISOString()
-          }))
-
-          // Submit user for onboarding
-          await userDb.submitUserToBackend(user.cosmicalName)
-          return true
         }
-        return false
+
+        this.adminPrivileges = enable
+        this.mode = enable ? 'admin' : 'user'
+
+        return { success: true }
       } catch (error) {
-        console.error('Registration error:', error)
-        throw error
+        console.error('Admin toggle error:', error)
+        return {
+          success: false,
+          error: error.message || 'Failed to toggle admin privileges'
+        }
       }
     },
 
-    async submitUser(cosmicalName) {
-      try {
-        const success = await userDb.submitUserToBackend(cosmicalName)
-        if (success) {
-          // Now we can log in the user
-          return this.login({ cosmicalName })
-        }
-        return false
-      } catch (error) {
-        console.error('User submission error:', error)
-        throw error
-      }
-    },
-
-    async loginAsExplorer(cosmicalName = 'CSMCL EXPLORER') {
-      try {
-        // Set explorer expiry before login
-        const now = new Date()
-        const expiry = new Date(now.getTime() + (10 * 24 * 60 * 60 * 1000)).toISOString()
-        userDb.setExplorerExpiry(expiry)
-
-        // Skip phrase validation for explorer login
-        const success = await this.login({ 
-          cosmicalName, 
-          skipPhraseValidation: true 
-        })
-
-        if (!success) {
-          // Clean up if login failed
-          userDb.setExplorerExpiry(null)
-        }
-        return success
-      } catch (error) {
-        console.error('Explorer login error:', error)
-        return false
-      }
-    },
-
+    // Logout
     logout() {
-      // Clear explorer expiry if it was an explorer session
-      if (this.isExplorer) {
-        userDb.setExplorerExpiry(null)
-      }
-      this.$reset()
-      return true
-    },
-
-    async updateProfile(updates) {
-      try {
-        const success = await userDb.updateUser(this.user?.cosmicalName, updates)
-        if (!success) throw new Error('Profile update failed')
-
-        this.$patch(updates)
-
-        // Trigger profile customization achievement
-        if (!this.metrics.some(m => m.id === 'customize-profile')) {
-          await this.trackMetric('customize-profile', 'profile', {
-            userId: this.user.cosmicalName
-          })
-        }
-
-        return true
-      } catch (error) {
-        console.error('Profile update error:', error)
-        return false
+      this.mode = 'explorer'
+      this.user = null
+      this.adminPrivileges = false
+      this.preferences = {
+        displayName: null,
+        email: null,
+        level: 'novice',
+        metrics: [],
+        achievements: []
       }
     },
 
-    async updateUserProfile(updates) {
-      try {
-        if (!this.user) throw new Error('No user logged in')
-
-        // Update local user first
-        const updatedUser = await userDb.updateUser(this.user.cosmicalName, updates)
-        if (updatedUser) {
-          this.user = {
-            ...this.user,
-            ...updates,
-            lastUpdated: new Date().toISOString()
-          }
-          return true
-        }
-        return false
-      } catch (error) {
-        console.error('Profile update error:', error)
-        throw error
+    // Update user preferences
+    updatePreferences(updates) {
+      this.preferences = {
+        ...this.preferences,
+        ...updates
       }
-    },
-
-    async trackMetric(metricId, category, data = {}) {
-      // Track metric and get XP
-      const earnedXP = metricService.trackMetric(metricId, category, {
-        ...data,
-        userId: this.user?.cosmicalName
-      })
-
-      if (earnedXP > 0) {
-        await this.addXP(earnedXP)
+      if (this.user) {
+        userDb.updateUserPreferences(this.user.email, this.preferences)
       }
-
-      // Store metric in state
-      this.metrics.push({
-        id: metricId,
-        category,
-        timestamp: new Date().toISOString(),
-        ...data
-      })
-    },
-
-    async addXP(amount) {
-      const oldLevel = this.level
-      this.xp += amount
-      
-      // Recalculate level
-      const newLevel = metricService.calculateLevel(this.xp)
-      if (newLevel !== oldLevel) {
-        this.level = newLevel
-        // Update in database
-        await userDb.updateUser(this.user.cosmicalName, {
-          xp: this.xp,
-          level: this.level
-        })
-      }
-    },
-
-    async unlockFeature(feature) {
-      if (!this.space.features.includes(feature)) {
-        this.space.features.push(feature)
-        await userDb.updateUser(this.user?.cosmicalName, {
-          space: this.space
-        })
-      }
-    },
-
-    async switchProfile(cosmicalName) {
-      try {
-        const targetUser = userDb.getUser(cosmicalName)
-        if (!targetUser) return false
-
-        // Store original user if first switch
-        if (!this.originalUser) {
-          this.originalUser = { ...this.user }
-        }
-
-        // Switch to target user
-        this.user = targetUser
-        this.isLoggedIn = true
-        this.displayName = targetUser.displayName || targetUser.cosmicalName
-        this.cosmicalEmail = targetUser.email
-        this.isAdmin = targetUser.role === 'admin'
-        this.isExplorer = targetUser.role === 'explorer'
-        this.isVerified = targetUser.verified || false
-
-        return true
-      } catch (error) {
-        console.error('Profile switch error:', error)
-        return false
-      }
-    },
-
-    async revertToOriginalProfile() {
-      if (!this.originalUser) return false
-      
-      const success = await this.switchProfile(this.originalUser.cosmicalName)
-      if (success) {
-        this.originalUser = null
-      }
-      return success
-    },
+    }
   },
 
   persist: {
@@ -389,10 +162,7 @@ export const useUserStore = defineStore('user', {
     strategies: [
       {
         storage: localStorage,
-        paths: ['user', 'isLoggedIn', 'isAdmin', 'isExplorer', 'isVerified', 
-                'displayName', 'cosmicalEmail', 'explorerExpiry', 
-                'verificationDetails', 'space', 'wallet', 'spaceMetrics', 'stepProgress',
-                'metrics', 'xp', 'level']
+        paths: ['mode', 'user', 'adminPrivileges', 'preferences']
       }
     ]
   }

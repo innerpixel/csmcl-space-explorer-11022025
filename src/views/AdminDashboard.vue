@@ -34,8 +34,8 @@
       <stats-section
         :stats="systemStats"
         :stat-values="stats.stats"
-        :loading="stats.loading"
-        :error="stats.error"
+        :loading="stats.loading?.value || false"
+        :error="stats.error?.value"
         variant="admin"
       />
 

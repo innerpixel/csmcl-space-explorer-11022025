@@ -1,6 +1,7 @@
 <script setup>
 import { RouterView } from 'vue-router'
 import { useUserStore } from './stores/user'
+import { onMounted } from 'vue'
 import Navbar from './components/Navbar.vue'
 import AchievementNotification from './components/achievements/AchievementNotification.vue'
 import { useAchievements } from './composables/useAchievements'
@@ -8,6 +9,13 @@ import NotificationToast from './components/NotificationToast.vue'
 
 const userStore = useUserStore()
 const { activeNotification, dismissNotification } = useAchievements()
+
+// Initialize user state if needed
+onMounted(() => {
+  if (!userStore.mode) {
+    userStore.startExplorer()
+  }
+})
 </script>
 
 <template>

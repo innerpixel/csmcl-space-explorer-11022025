@@ -14,7 +14,7 @@ export function setupRouteGuards(router) {
     }
 
     // Check if route requires auth
-    if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+    if (to.meta.requiresAuth && !userStore.isLoggedIn && userStore.mode !== 'explorer') {
       next({ 
         path: '/login',
         query: { redirect: to.fullPath }
@@ -22,14 +22,18 @@ export function setupRouteGuards(router) {
       return
     }
 
-    // Check explorer expiry
-    if (userStore.isExplorer && userStore.isExplorerExpired) {
-      userStore.logout()
-      next({ 
-        path: '/login',
-        query: { message: 'Explorer session expired' }
-      })
-      return
+    // Check if route is restricted to certain modes
+    if (to.meta.roles && to.meta.roles.length > 0) {
+      if (!to.meta.roles.includes(userStore.mode)) {
+        if (userStore.mode === 'explorer') {
+          next({ path: '/explorer' })
+        } else if (userStore.isLoggedIn) {
+          next({ path: '/dashboard' })
+        } else {
+          next({ path: '/login' })
+        }
+        return
+      }
     }
 
     next()

@@ -19,12 +19,26 @@ import { useUserStore } from '../stores/user'
 import ExplorerProfile from '../components/profile/ExplorerProfile.vue'
 import UserProfile from '../components/profile/UserProfile.vue'
 import AdminProfile from '../components/profile/AdminProfile.vue'
+import BotProfile from '../components/profile/BotProfile.vue'
 
 const userStore = useUserStore()
 
 const currentProfileComponent = computed(() => {
-  if (userStore.isAdmin) return AdminProfile
+  // Check explorer mode first
   if (userStore.isExplorer) return ExplorerProfile
+  
+  // Check admin mode
+  if (userStore.isAdmin) return AdminProfile
+  
+  const user = userStore.user
+  if (!user) return UserProfile
+
+  // Check if this is a bot profile
+  if (user.cosmicalName?.endsWith('_BOT')) {
+    return BotProfile
+  }
+
+  // Default to user profile
   return UserProfile
 })
 </script>

@@ -170,9 +170,9 @@ const searchQuery = ref('')
 const selectedRole = ref('all')
 const sortBy = ref('displayName')
 
-// Get all users
+// Get all users (excluding bots)
 const users = computed(() => {
-  const defaultUsers = userDb.getDefaultUsers()
+  const defaultUsers = userDb.getDefaultUsers().filter(user => !user.cosmicalName.endsWith('_BOT'))
   const localUsers = userDb.getLocalUsers()
   const submittedUsers = userDb.getSubmittedUsers()
   return [...defaultUsers, ...localUsers, ...submittedUsers]

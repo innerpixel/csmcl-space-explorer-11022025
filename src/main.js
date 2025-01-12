@@ -17,19 +17,26 @@ app.use(router)
 // Register service worker using vite-plugin-pwa
 const updateSW = registerSW({
   onNeedRefresh() {
-    if (confirm('New content available. Would you like to update?')) {
-      updateSW()
-    }
+    window.dispatchEvent(new CustomEvent('pwa-update-available'))
   },
   onOfflineReady() {
-    console.log('App ready to work offline')
+    window.dispatchEvent(new CustomEvent('pwa-offline-ready'))
+  },
+  onRegistered(registration) {
+    // Check for updates periodically
+    setInterval(() => {
+      registration.update()
+    }, 60 * 60 * 1000) // Check every hour
   },
   immediate: true
 })
 
-// Handle offline/online events
+// Make updateSW available globally for the Settings component
+window.updateSW = updateSW
+
+// Handle online/offline events
 window.addEventListener('online', () => {
-  app.config.globalProperties.$toast?.success('Connection restored!')
+  app.config.globalProperties.$toast?.success('You are back online!')
 })
 
 window.addEventListener('offline', () => {

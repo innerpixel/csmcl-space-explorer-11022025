@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { setupRouteGuards } from './guards'
 import Home from '../views/Home.vue'
+import AdminInit from '../views/admin/Init.vue'
 
 const routes = [
   // Public routes
@@ -29,7 +30,7 @@ const routes = [
     beforeEnter: (to, from, next) => {
       const store = useUserStore()
       if (store.isLoggedIn) {
-        next({ name: store.isExplorer ? 'explorer' : 'home' })
+        next({ name: store.isExplorer ? 'explorer' : 'dashboard' })
       } else {
         next()
       }
@@ -94,6 +95,10 @@ const routes = [
         next({ name: 'login' })
         return
       }
+      // For explorer, ensure profile view is in explorer mode
+      if (store.isExplorer) {
+        to.meta.explorerMode = true
+      }
       next()
     }
   },
@@ -112,17 +117,12 @@ const routes = [
     name: 'explorer',
     component: () => import('../views/ExplorerLanding.vue'),
     meta: { 
-      requiresAuth: true,
       breadcrumb: 'Explorer',
       roles: ['explorer']
     },
     beforeEnter: (to, from, next) => {
       const store = useUserStore()
-      if (!store.isExplorer) {
-        next({ name: 'home' })
-        return
-      }
-      if (store.isExplorerExpired) {
+      if (!store.mode === 'explorer') {
         next({ name: 'login' })
         return
       }
@@ -172,6 +172,19 @@ const routes = [
         meta: {
           breadcrumb: 'Edit User'
         }
+      },
+      {
+        path: 'init',
+        name: 'admin-init',
+        component: () => import('../components/admin/AdminInit.vue'),
+        beforeEnter: (to, from, next) => {
+          const user = userDb.getUser('CSMCL_ADMIN')
+          if (!user?.requiresInit) {
+            next({ name: 'admin-dashboard' })
+          } else {
+            next()
+          }
+        }
       }
     ],
     beforeEnter: (to, from, next) => {
@@ -181,6 +194,24 @@ const routes = [
         return
       }
       next()
+    }
+  },
+  {
+    path: '/admin/init',
+    name: 'admin-init',
+    component: AdminInit,
+    meta: {
+      requiresNoAuth: true
+    }
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('../views/Settings.vue'),
+    meta: {
+      requiresAuth: true,
+      breadcrumb: 'Settings',
+      roles: ['user', 'admin']
     }
   },
 

@@ -27,6 +27,14 @@ export default {
           },
         },
       },
+      boxShadow: {
+        'glow-sm': '0 0 8px rgba(52,211,153,0.6)',
+        'glow': '0 0 15px rgba(52,211,153,0.8)',
+        'glow-lg': '0 0 25px rgba(52,211,153,1)',
+      },
+      animation: {
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
     },
   },
   plugins: [

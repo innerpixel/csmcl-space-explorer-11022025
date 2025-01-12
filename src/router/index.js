@@ -9,6 +9,9 @@ const routes = [
     path: '/',
     name: 'home',
     component: Home,
+    meta: {
+      breadcrumb: 'Home'
+    },
     beforeEnter: (to, from, next) => {
       const store = useUserStore()
       // If user is an explorer, always redirect to explorer page
@@ -69,13 +72,21 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('../views/UserDashboard.vue'),
-    meta: { requiresAuth: true }
+    meta: { 
+      requiresAuth: true,
+      breadcrumb: 'Dashboard',
+      roles: ['user', 'admin']
+    }
   },
   {
     path: '/profile',
     name: 'profile',
     component: () => import('../views/Profile.vue'),
-    meta: { requiresAuth: true },
+    meta: { 
+      requiresAuth: true,
+      breadcrumb: 'Profile',
+      roles: ['user', 'admin', 'explorer']
+    },
     beforeEnter: (to, from, next) => {
       const store = useUserStore()
       // Check if user is logged in and not expired
@@ -90,13 +101,21 @@ const routes = [
     path: '/network',
     name: 'network',
     component: () => import('../views/Network.vue'),
-    meta: { requiresAuth: true }
+    meta: { 
+      requiresAuth: true,
+      breadcrumb: 'Network',
+      roles: ['user', 'admin']
+    }
   },
   {
     path: '/explorer',
     name: 'explorer',
     component: () => import('../views/ExplorerLanding.vue'),
-    meta: { requiresAuth: true },
+    meta: { 
+      requiresAuth: true,
+      breadcrumb: 'Explorer',
+      roles: ['explorer']
+    },
     beforeEnter: (to, from, next) => {
       const store = useUserStore()
       if (!store.isExplorer) {
@@ -113,32 +132,46 @@ const routes = [
   {
     path: '/admin',
     name: 'admin',
-    component: () => import('../views/Admin.vue'),
+    component: () => import('../views/AdminLayout.vue'),
     meta: { 
       requiresAuth: true,
-      requiresAdmin: true 
+      requiresAdmin: true,
+      breadcrumb: 'Admin',
+      roles: ['admin']
     },
     children: [
       {
         path: '',
         name: 'admin-dashboard',
-        component: () => import('../views/AdminDashboard.vue')
+        component: () => import('../views/AdminDashboard.vue'),
+        meta: {
+          breadcrumb: 'Dashboard'
+        }
       },
       {
         path: 'users',
         name: 'admin-users',
-        component: () => import('../views/Admin.vue')
+        component: () => import('../views/Admin.vue'),
+        meta: {
+          breadcrumb: 'User Management'
+        }
       },
       {
         path: 'users/new',
         name: 'admin-user-new',
-        component: () => import('../components/admin/UserEditForm.vue')
+        component: () => import('../components/admin/UserEditForm.vue'),
+        meta: {
+          breadcrumb: 'New User'
+        }
       },
       {
         path: 'users/:id/edit',
         name: 'admin-user-edit',
         component: () => import('../components/admin/UserEditForm.vue'),
-        props: true
+        props: true,
+        meta: {
+          breadcrumb: 'Edit User'
+        }
       }
     ],
     beforeEnter: (to, from, next) => {
@@ -166,6 +199,13 @@ const router = createRouter({
 
 // Setup route guards
 setupRouteGuards(router)
+
+// Add error handling for dynamic imports
+router.onError((error) => {
+  if (error.message.includes('Failed to fetch dynamically imported module')) {
+    window.location.reload()
+  }
+})
 
 // Navigation guard for protected routes
 router.beforeEach((to, from, next) => {

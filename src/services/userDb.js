@@ -1,3 +1,22 @@
+import CryptoJS from 'crypto-js'
+import { generateMnemonic, validateMnemonic, mnemonicToSeedSync } from '@scure/bip39'
+import { wordlist } from '@scure/bip39/wordlists/english'
+
+// Flow specific constants
+const FLOW_ENTROPY_BITS = 128 // For 12-word mnemonic
+const FLOW_WORD_COUNT = 12
+
+// Validate Flow recovery phrase
+const validateFlowPhrase = (phrase) => {
+  try {
+    if (!phrase) return false
+    return validateMnemonic(phrase.trim(), wordlist)
+  } catch (error) {
+    console.error('Phrase validation error:', error)
+    return false
+  }
+}
+
 // Storage keys for different user types
 const STORAGE_KEYS = {
   LOCAL_USERS: 'csmcl_local_users',    // Users created but not submitted
@@ -7,15 +26,6 @@ const STORAGE_KEYS = {
 }
 
 const MAX_USER_LIMIT = 3
-
-// Common words to suggest in phrases
-const PHRASE_SUGGESTIONS = [
-  ['authentication', 'verification', 'identification'],
-  ['secure', 'protect', 'validate'],
-  ['digital', 'quantum', 'network'],
-  ['cosmic', 'galaxy', 'universe'],
-  ['blockchain', 'cryptography', 'security']
-]
 
 // User validation rules
 const USER_VALIDATION = {
@@ -35,24 +45,20 @@ const USER_VALIDATION = {
     message: 'Password must be at least 8 characters and contain uppercase, lowercase, number and special character'
   },
   phrase: {
-    minWords: 3,
-    minWordLength: 5,
-    validate: (phrase) => {
-      if (!phrase) return false
-      const words = phrase.trim().split(/\s+/)
-      return words.length >= 3 && words.every(word => word.length >= 5)
-    },
-    message: 'Phrase must contain at least 3 words, each word being at least 5 letters long'
+    minWords: FLOW_WORD_COUNT,
+    validate: validateFlowPhrase,
+    message: `Recovery phrase must be ${FLOW_WORD_COUNT} words from the BIP39 wordlist`
   }
 }
 
-// Flow specific constants
-const FLOW_ENTROPY_BITS = 128 // For 12-word mnemonic
-const FLOW_WORD_COUNT = 12
-
-import CryptoJS from 'crypto-js'
-import { generateMnemonic, validateMnemonic, mnemonicToSeedSync } from '@scure/bip39'
-import { wordlist } from '@scure/bip39/wordlists/english'
+// Common words to suggest in phrases
+const PHRASE_SUGGESTIONS = [
+  ['authentication', 'verification', 'identification'],
+  ['secure', 'protect', 'validate'],
+  ['digital', 'quantum', 'network'],
+  ['cosmic', 'galaxy', 'universe'],
+  ['blockchain', 'cryptography', 'security']
+]
 
 // Generate Flow-compatible recovery phrase
 const generateFlowRecoveryPhrase = () => {
@@ -61,17 +67,6 @@ const generateFlowRecoveryPhrase = () => {
   } catch (error) {
     console.error('Phrase generation error:', error)
     throw error
-  }
-}
-
-// Validate Flow recovery phrase
-const validateFlowPhrase = (phrase) => {
-  try {
-    if (!phrase) return false
-    return validateMnemonic(phrase, wordlist)
-  } catch (error) {
-    console.error('Phrase validation error:', error)
-    return false
   }
 }
 
@@ -365,7 +360,7 @@ class UserDb {
 
     // Validate phrase
     if (!userData.phrase || !validateFlowPhrase(userData.phrase)) {
-      errors.push('Invalid recovery phrase')
+      errors.push(USER_VALIDATION.phrase.message)
     }
 
     return errors
@@ -388,9 +383,11 @@ class UserDb {
 
   // Get a specific user by cosmicalName
   getUser(cosmicalName, includeSecrets = false) {
+    const searchName = cosmicalName.toUpperCase()
+    
     // Check default users first
     const defaultUser = this.getDefaultUsers().find(
-      u => u.cosmicalName.toLowerCase() === cosmicalName.toLowerCase()
+      u => u.cosmicalName.toUpperCase() === searchName
     )
     if (defaultUser) {
       if (defaultUser.role === 'explorer') {
@@ -404,7 +401,7 @@ class UserDb {
 
     // Check local users
     const localUser = this.getLocalUsers().find(
-      u => u.cosmicalName.toLowerCase() === cosmicalName.toLowerCase()
+      u => u.cosmicalName.toUpperCase() === searchName
     )
     if (localUser) {
       if (includeSecrets && localUser.phrase && localUser.flowSeed && localUser.salt) {
@@ -419,7 +416,7 @@ class UserDb {
 
     // Check submitted users
     const submittedUser = this.getSubmittedUsers().find(
-      u => u.cosmicalName.toLowerCase() === cosmicalName.toLowerCase()
+      u => u.cosmicalName.toUpperCase() === searchName
     )
     if (submittedUser && includeSecrets && submittedUser.phrase && submittedUser.flowSeed && submittedUser.salt) {
       return {

@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@blocto/fcl": "^1.4.0",
+    "@scure/bip39": "^1.5.1",
     "@tailwindcss/typography": "^0.5.15",
     "@vueuse/core": "^12.3.0",
     "crypto-js": "^4.2.0",

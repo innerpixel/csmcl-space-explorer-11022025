@@ -5,6 +5,7 @@ import { metricService } from '../services/achievements'
 export const useUserStore = defineStore('user', {
   state: () => ({
     user: null,
+    originalUser: null,  // Track original user when switching
     isLoggedIn: false,
     isAdmin: false,
     isExplorer: false,
@@ -115,14 +116,19 @@ export const useUserStore = defineStore('user', {
       return false
     },
 
-    async login({ cosmicalName }) {
+    async login({ cosmicalName, phrase }) {
       try {
-        const user = await userDb.getUser(cosmicalName)
+        const user = userDb.getUser(cosmicalName, true) // Get user with decrypted phrase
         if (!user) {
           return false
         }
 
-        // Set user data
+        // Verify phrase if provided
+        if (phrase && user.phrase && phrase !== user.phrase) {
+          return false
+        }
+
+        // Set user data in store
         this.user = user
         this.isLoggedIn = true
         this.displayName = user.displayName || cosmicalName
@@ -130,13 +136,7 @@ export const useUserStore = defineStore('user', {
         this.isAdmin = user.role === 'admin'
         this.isExplorer = user.role === 'explorer'
         this.isVerified = user.verified || false
-        
-        // Set explorer expiry if applicable
-        if (this.isExplorer) {
-          const now = new Date()
-          this.explorerExpiry = new Date(now.getTime() + (10 * 24 * 60 * 60 * 1000)).toISOString()
-          userDb.updateUser(cosmicalName, { explorerExpiry: this.explorerExpiry })
-        }
+        this.explorerExpiry = user.explorerExpiry || null
 
         return true
       } catch (error) {
@@ -147,40 +147,82 @@ export const useUserStore = defineStore('user', {
 
     async register(userData) {
       try {
-        const success = userDb.createUser({
-          ...userData,
-          role: 'user',
-          isVerified: false,
-          space: {
-            theme: 'default',
-            visibility: 'private'
-          }
+        // Create local user
+        const user = await userDb.createLocalUser({
+          cosmicalName: userData.cosmicalName,
+          displayName: userData.displayName,
+          email: userData.email,
+          password: userData.password,
+          phrase: userData.phrase
         })
 
-        if (success) {
-          return this.login({ cosmicalName: userData.cosmicalName })
+        if (user) {
+          // Set initial state with progress tracking
+          this.user = {
+            ...user,
+            displayName: user.displayName,
+            email: user.email,
+            isVerified: false,
+            lastUpdated: new Date().toISOString(),
+            verificationDetails: {
+              status: 'pending',
+              steps: {
+                identity: true,
+                email: false,
+                security: false
+              },
+              progress: {
+                current: 'identity',
+                completed: ['registration'],
+                next: 'email'
+              }
+            }
+          }
+          this.isLoggedIn = true
+
+          // Save progress to localStorage
+          localStorage.setItem('onboarding_progress', JSON.stringify({
+            step: 'identity',
+            completed: ['registration'],
+            timestamp: new Date().toISOString()
+          }))
+
+          // Submit user for onboarding
+          await userDb.submitUserToBackend(user.cosmicalName)
+          return true
         }
         return false
       } catch (error) {
         console.error('Registration error:', error)
-        return false
+        throw error
       }
     },
 
-    async loginAsExplorer(cosmicalName = 'CSMCL.Explorer') {
+    async submitUser(cosmicalName) {
       try {
-        const success = await this.login({ cosmicalName })
+        const success = await userDb.submitUserToBackend(cosmicalName)
         if (success) {
-          // Set explorer specific state
-          this.isExplorer = true
-          this.explorerExpiry = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString() // 10 days
-          
-          // Update last login for explorer
-          userDb.updateUser(cosmicalName, { 
-            lastLogin: new Date().toISOString(),
-            isExplorer: true,
-            explorerExpiry: this.explorerExpiry
-          })
+          // Now we can log in the user
+          return this.login({ cosmicalName })
+        }
+        return false
+      } catch (error) {
+        console.error('User submission error:', error)
+        throw error
+      }
+    },
+
+    async loginAsExplorer(cosmicalName = 'CSMCL EXPLORER') {
+      try {
+        // Set explorer expiry before login
+        const now = new Date()
+        const expiry = new Date(now.getTime() + (10 * 24 * 60 * 60 * 1000)).toISOString()
+        userDb.setExplorerExpiry(expiry)
+
+        const success = await this.login({ cosmicalName })
+        if (!success) {
+          // Clean up if login failed
+          userDb.setExplorerExpiry(null)
         }
         return success
       } catch (error) {
@@ -190,6 +232,10 @@ export const useUserStore = defineStore('user', {
     },
 
     logout() {
+      // Clear explorer expiry if it was an explorer session
+      if (this.isExplorer) {
+        userDb.setExplorerExpiry(null)
+      }
       this.$reset()
       return true
     },
@@ -212,6 +258,27 @@ export const useUserStore = defineStore('user', {
       } catch (error) {
         console.error('Profile update error:', error)
         return false
+      }
+    },
+
+    async updateUserProfile(updates) {
+      try {
+        if (!this.user) throw new Error('No user logged in')
+
+        // Update local user first
+        const updatedUser = await userDb.updateUser(this.user.cosmicalName, updates)
+        if (updatedUser) {
+          this.user = {
+            ...this.user,
+            ...updates,
+            lastUpdated: new Date().toISOString()
+          }
+          return true
+        }
+        return false
+      } catch (error) {
+        console.error('Profile update error:', error)
+        throw error
       }
     },
 
@@ -258,7 +325,43 @@ export const useUserStore = defineStore('user', {
           space: this.space
         })
       }
-    }
+    },
+
+    async switchProfile(cosmicalName) {
+      try {
+        const targetUser = userDb.getUser(cosmicalName)
+        if (!targetUser) return false
+
+        // Store original user if first switch
+        if (!this.originalUser) {
+          this.originalUser = { ...this.user }
+        }
+
+        // Switch to target user
+        this.user = targetUser
+        this.isLoggedIn = true
+        this.displayName = targetUser.displayName || targetUser.cosmicalName
+        this.cosmicalEmail = targetUser.email
+        this.isAdmin = targetUser.role === 'admin'
+        this.isExplorer = targetUser.role === 'explorer'
+        this.isVerified = targetUser.verified || false
+
+        return true
+      } catch (error) {
+        console.error('Profile switch error:', error)
+        return false
+      }
+    },
+
+    async revertToOriginalProfile() {
+      if (!this.originalUser) return false
+      
+      const success = await this.switchProfile(this.originalUser.cosmicalName)
+      if (success) {
+        this.originalUser = null
+      }
+      return success
+    },
   },
 
   persist: {

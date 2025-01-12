@@ -113,8 +113,42 @@ const routes = [
   {
     path: '/admin',
     name: 'admin',
-    component: () => import('../views/AdminDashboard.vue'),
-    meta: { requiresAdmin: true }
+    component: () => import('../views/Admin.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresAdmin: true 
+    },
+    children: [
+      {
+        path: '',
+        name: 'admin-dashboard',
+        component: () => import('../views/AdminDashboard.vue')
+      },
+      {
+        path: 'users',
+        name: 'admin-users',
+        component: () => import('../views/Admin.vue')
+      },
+      {
+        path: 'users/new',
+        name: 'admin-user-new',
+        component: () => import('../components/admin/UserEditForm.vue')
+      },
+      {
+        path: 'users/:id/edit',
+        name: 'admin-user-edit',
+        component: () => import('../components/admin/UserEditForm.vue'),
+        props: true
+      }
+    ],
+    beforeEnter: (to, from, next) => {
+      const store = useUserStore()
+      if (!store.isAdmin) {
+        next({ name: 'home' })
+        return
+      }
+      next()
+    }
   },
 
   // Catch all route for 404

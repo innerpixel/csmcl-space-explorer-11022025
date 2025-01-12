@@ -109,9 +109,16 @@ const quickActions = computed(() => [
     buttonText: 'Manage Users'
   },
   {
+    title: 'Add New User',
+    description: 'Create a new user account',
+    icon: '➕',
+    link: '/admin/users/new',
+    buttonText: 'Add User'
+  },
+  {
     title: 'Network Control',
-    description: 'Configure network settings and security',
-    icon: '🔐',
+    description: 'Monitor and manage network settings',
+    icon: '🌐',
     link: '/admin/network',
     buttonText: 'Network Settings'
   }
